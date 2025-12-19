@@ -1,5 +1,4 @@
-﻿@using Umbraco.Cms.Core.Models.PublishedContent
-@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 @{
     Layout = null;
 }
@@ -162,6 +161,7 @@
         }
         .item-meta {
             font-size: 14px;
+            font-weight: normal;
             color: #666;
             margin-bottom: 10px;
         }
@@ -249,16 +249,13 @@
                         <option value="asc">Ascending</option>
                     </select>
                 </div>
-                @*
-                TODO: add index alias selector?
                 <div class="form-group">
-                    <label for="indexAlias">Index alias</label>
-                    <select id="indexAlias">
+                    <label for="provider">Index</label>
+                    <select id="provider">
                         <option value="default">Default</option>
                         <option value="custom">Custom</option>
                     </select>
                 </div>
-                *@
                 <button type="submit" class="search-btn">Search</button>
             </form>
         </div>
@@ -293,8 +290,7 @@
                 },
                 sortBy: '',
                 sortDirection: 'desc',
-                // TODO: state for selected index alias
-                // indexAlias: '',
+                provider: 'default',
                 total: 0,
                 facets: []
             };
@@ -304,8 +300,7 @@
                 searchQuery: document.getElementById('searchQuery'),
                 sortBy: document.getElementById('sortBy'),
                 sortDirection: document.getElementById('sortDirection'),
-                // TODO: include index alias selector here
-                // indexAlias: document.getElementById('indexAlias'),
+                provider: document.getElementById('provider'),
                 facetsContainer: document.getElementById('facetsContainer'),
                 resultsContainer: document.getElementById('resultsContainer'),
                 resultsCount: document.getElementById('resultsCount'),
@@ -331,8 +326,7 @@
                     params.append('sortBy', state.sortBy);
                 }
                 params.append('sortDirection', state.sortDirection);
-                // TODO: pass index alias to controller
-                // params.append('indexAlias', state.indexAlias);
+                params.append('provider', state.provider);
 
                 return '/api/membersearch?' + params.toString();
             }
@@ -369,7 +363,7 @@
                 elements.resultsContainer.innerHTML = items.map(item => {
                     return `
                         <article class="item-card">
-                            <h3>${escapeHtml(item.name)}</h3>
+                            <h3>${escapeHtml(item.name)} <small class="item-meta">${item.email}</small></h3>
                             <div class="item-meta">
                                 ${item.zodiac ? `<span><strong>Zodiac:</strong> ${item.zodiac}</span>` : ''}
                                 ${item.generation ? `<span><strong>Generation:</strong> ${item.generation}</span>` : ''}
@@ -550,8 +544,7 @@
                 state.query = elements.searchQuery.value;
                 state.sortBy = elements.sortBy.value;
                 state.sortDirection = elements.sortDirection.value;
-                // TODO: include index alias selector here
-                // state.indexAlias = elements.indexAlias.value;
+                state.provider = elements.provider.value;
                 state.skip = 0;
                 performSearch();
             });
@@ -568,13 +561,12 @@
                 performSearch();
             });
 
-            // TODO: include index alias selector handler here
-            // elements.indexAlias.addEventListener('change', function() {
-            //     state.indexAlias = this.value;
-            //     resetFilters();
-            //     state.skip = 0;
-            //     performSearch();
-            // });
+            elements.provider.addEventListener('change', function() {
+                state.provider = this.value;
+                resetFilters();
+                state.skip = 0;
+                performSearch();
+            });
 
             elements.clearFilters.addEventListener('click', clearAllFilters);
 

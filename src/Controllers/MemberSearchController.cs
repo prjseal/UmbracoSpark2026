@@ -71,7 +71,8 @@ public class MemberSearchController : ControllerBase
         [FromQuery] string[]? personality = null,
         [FromQuery] string[]? generation = null,
         string? sortBy = null,
-        string? sortDirection = null)
+        string? sortDirection = null,
+        string? provider = "default")
     {
         var filters = new List<Filter>();
 
@@ -124,7 +125,9 @@ public class MemberSearchController : ControllerBase
             _ => new ScoreSorter(direction)
         };
 
-        const string indexAlias = SearchConstants.IndexAliases.DraftMembers;
+        var indexAlias = provider == "custom"
+            ? SiteConstants.IndexAliases.CustomMemberIndex
+            : SearchConstants.IndexAliases.DraftMembers;
         var searcher = _searcherResolver.GetRequiredSearcher(indexAlias);
 
         var result = await searcher.SearchAsync(
@@ -136,7 +139,7 @@ public class MemberSearchController : ControllerBase
             skip: skip,
             take: take);
         
-        // TODO: is there a better/faster way to get members?
+        // TODO: is there a better/faster way to get members? looks like GetByKeysAsync() is explicitly uncached
 
         var memberSearchResultItemModels = new  List<MemberSearchResultItemModel>();
         foreach (var id in result.Documents.Select(d => d.Id))
@@ -160,6 +163,7 @@ public class MemberSearchController : ControllerBase
                 {
                     Birthdate = person.Birthdate,
                     Name = person.Name,
+                    Email = person.Email,
                     Genre = person.Genre,
                     Zodiac = person.Zodiac,
                     Generation = generationLabel,

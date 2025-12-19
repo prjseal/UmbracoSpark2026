@@ -1,9 +1,11 @@
 ﻿using System.Text.Json.Serialization.Metadata;
+using Site.ContentIndexing;
 using Site.NotificationHandlers;
 using Site.Services;
 using Umbraco.Cms.Core.Mapping;
 using Umbraco.Cms.Core.Notifications;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
+using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 
 namespace Site.DependencyInjection;
@@ -61,8 +63,11 @@ public static partial class UmbracoBuilderExtensions
     public static IUmbracoBuilder RegisterServices(this IUmbracoBuilder builder)
     {
         builder.Services
+            .AddTransient<IContentIndexer, MemberAsPersonContentIndexer>()
+            .AddTransient<IMemberContentChangeStrategy, MemberContentChangeStrategy>()
             .AddSingleton<IPeopleService, PeopleService>()
-            .AddSingleton<IMemberToPersonService, MemberToPersonService>();
+            .AddSingleton<IMemberToPersonService, MemberToPersonService>()
+            .AddSingleton<IMemberIndexFieldsForPersonHandler, MemberIndexFieldsForPersonHandler>();
 
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, UmbracoApplicationStartedNotificationHandler>();
 
