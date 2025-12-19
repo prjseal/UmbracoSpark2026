@@ -15,6 +15,12 @@ public sealed class SiteComposer : IComposer
             .AddExamineSearchProvider();
 
         // force rebuild indexes after startup (awaiting a better solution from Core)
-        builder.RebuildIndexesAfterStartup();
+        // builder.RebuildIndexesAfterStartup();
+
+        builder.RegisterContentIndexers();
+        
+        builder
+            .RegisterServices()
+            .ConfigureExamineSearchProvider();
     }
 }

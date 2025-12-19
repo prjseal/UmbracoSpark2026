@@ -1,0 +1,585 @@
+﻿@using Umbraco.Cms.Core.Models.PublishedContent
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Search</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        html {
+            scrollbar-gutter: stable;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .search-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .search-form {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #555;
+        }
+        .search-input {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .search-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .search-btn:hover {
+            background-color: #2980b9;
+        }
+        select {
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+        .main-content {
+            display: flex;
+            gap: 20px;
+        }
+        .filters-panel {
+            width: 250px;
+            flex-shrink: 0;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+        .filters-panel h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        .filter-group {
+            margin-bottom: 20px;
+        }
+        .filter-group h4 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #555;
+            text-transform: capitalize;
+        }
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .filter-option input {
+            margin: 0;
+        }
+        .filter-count {
+            color: #888;
+            font-size: 12px;
+        }
+        .results-panel {
+            flex: 1;
+        }
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .results-count {
+            font-size: 14px;
+            color: #666;
+        }
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .item-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .item-card h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+        .item-card h3 a {
+            color: inherit;
+            text-decoration: none;
+        }
+        .item-card h3 a:hover {
+            color: #3498db;
+        }
+        .item-meta {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .item-meta span {
+            margin-right: 15px;
+        }
+        .item-summary {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #444;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 20px;
+        }
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .pagination button:hover:not(:disabled) {
+            background: #f0f0f0;
+        }
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination button.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            background: white;
+            border-radius: 8px;
+        }
+        .clear-filters {
+            font-size: 12px;
+            color: #3498db;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            margin-left: 10px;
+        }
+        .clear-filters:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Member Search</h1>
+
+        <div class="search-section">
+            <form class="search-form" id="searchForm">
+                <div class="form-group">
+                    <label for="searchQuery">Search</label>
+                    <input type="text" id="searchQuery" class="search-input" placeholder="Search for members...">
+                </div>
+                <div class="form-group">
+                    <label for="sortBy">Sort by</label>
+                    <select id="sortBy">
+                        <option value="">Relevance</option>
+                        <option value="name">Name</option>
+                        <option value="birthdate">Birthdate</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="sortDirection">Direction</label>
+                    <select id="sortDirection">
+                        <option value="desc">Descending</option>
+                        <option value="asc">Ascending</option>
+                    </select>
+                </div>
+                @*
+                TODO: add index alias selector?
+                <div class="form-group">
+                    <label for="indexAlias">Index alias</label>
+                    <select id="indexAlias">
+                        <option value="default">Default</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                *@
+                <button type="submit" class="search-btn">Search</button>
+            </form>
+        </div>
+
+        <div class="main-content">
+            <aside class="filters-panel">
+                <h3>Filters <button class="clear-filters" id="clearFilters">Clear all</button></h3>
+                <div id="facetsContainer"></div>
+            </aside>
+
+            <main class="results-panel">
+                <div class="results-header">
+                    <span class="results-count" id="resultsCount"></span>
+                </div>
+                <div id="resultsContainer" class="item-list"></div>
+                <div id="paginationContainer" class="pagination"></div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            const state = {
+                query: '',
+                skip: 0,
+                take: 10,
+                filters: {
+                    zodiac: [],
+                    genre: [],
+                    personality: [],
+                    generation: []
+                },
+                sortBy: '',
+                sortDirection: 'desc',
+                // TODO: state for selected index alias
+                // indexAlias: '',
+                total: 0,
+                facets: []
+            };
+
+            const elements = {
+                searchForm: document.getElementById('searchForm'),
+                searchQuery: document.getElementById('searchQuery'),
+                sortBy: document.getElementById('sortBy'),
+                sortDirection: document.getElementById('sortDirection'),
+                // TODO: include index alias selector here
+                // indexAlias: document.getElementById('indexAlias'),
+                facetsContainer: document.getElementById('facetsContainer'),
+                resultsContainer: document.getElementById('resultsContainer'),
+                resultsCount: document.getElementById('resultsCount'),
+                paginationContainer: document.getElementById('paginationContainer'),
+                clearFilters: document.getElementById('clearFilters')
+            };
+
+            function buildSearchUrl() {
+                const params = new URLSearchParams();
+
+                if (state.query) {
+                    params.append('query', state.query);
+                }
+                params.append('skip', state.skip);
+                params.append('take', state.take);
+
+                state.filters.zodiac.forEach(v => params.append('zodiac', v));
+                state.filters.genre.forEach(v => params.append('genre', v));
+                state.filters.personality.forEach(v => params.append('personality', v));
+                state.filters.generation.forEach(v => params.append('generation', v));
+
+                if (state.sortBy) {
+                    params.append('sortBy', state.sortBy);
+                }
+                params.append('sortDirection', state.sortDirection);
+                // TODO: pass index alias to controller
+                // params.append('indexAlias', state.indexAlias);
+
+                return '/api/membersearch?' + params.toString();
+            }
+
+            async function performSearch() {
+                elements.resultsContainer.innerHTML = '<div class="loading">Loading...</div>';
+
+                try {
+                    const response = await fetch(buildSearchUrl());
+                    if (!response.ok) {
+                        throw new Error('Search request failed');
+                    }
+                    const data = await response.json();
+
+                    state.total = data.total;
+                    state.facets = data.facets || [];
+
+                    renderResults(data.items);
+                    renderFacets(data.facets);
+                    renderPagination();
+                    updateResultsCount();
+                } catch (error) {
+                    elements.resultsContainer.innerHTML = '<div class="no-results">An error occurred while searching. Please try again.</div>';
+                    console.error('Search error:', error);
+                }
+            }
+
+            function renderResults(items) {
+                if (!items || items.length === 0) {
+                    elements.resultsContainer.innerHTML = '<div class="no-results">No members found. Try adjusting your search or filters.</div>';
+                    return;
+                }
+
+                elements.resultsContainer.innerHTML = items.map(item => {
+                    return `
+                        <article class="item-card">
+                            <h3>${escapeHtml(item.name)}</h3>
+                            <div class="item-meta">
+                                ${item.zodiac ? `<span><strong>Zodiac:</strong> ${item.zodiac}</span>` : ''}
+                                ${item.generation ? `<span><strong>Generation:</strong> ${item.generation}</span>` : ''}
+                                ${item.genre ? `<span><strong>Genre:</strong> ${item.genre}</span>` : ''}
+                                ${item.birthdate ? `<span><strong>Birthdate:</strong> ${(new Date(item.birthdate)).toLocaleDateString('en-GB')}</span>` : ''}
+                                ${item.personality ? `<span><strong>Personality:</strong> ${item.personality}</span>` : ''}
+                            </div>
+                        </article>
+                    `;
+                }).join('');
+            }
+
+            function renderFacets(facets) {
+                if (!facets || facets.length === 0) {
+                    elements.facetsContainer.innerHTML = '<p>No filters available</p>';
+                    return;
+                }
+
+                const facetLabels = {
+                    'zodiac': 'Zodiac',
+                    'genre': 'Genre',
+                    'personality': 'Personality',
+                    'generation': 'Generation',
+                };
+
+                const facetOrder = ['generation', 'personality', 'zodiac', 'genre'];
+                const sortedFacets = [...facets].sort((a, b) => {
+                    const indexA = facetOrder.indexOf(a.fieldName);
+                    const indexB = facetOrder.indexOf(b.fieldName);
+                    return indexA - indexB;
+                });
+
+                const generationOrder = ['Silent Generation', 'Boomers', 'Generation X', 'Millennials', 'Zoomers', 'Generation Alpha'];
+
+                function sortFacetValues(fieldName, values) {
+                    if (fieldName === 'generation') {
+                        return [...values].sort((a, b) => {
+                            const indexA = generationOrder.indexOf(a.key);
+                            const indexB = generationOrder.indexOf(b.key);
+                            return indexA - indexB;
+                        });
+                    } else {
+                        return [...values].sort((a, b) => a.key.localeCompare(b.key));
+                    }
+                }
+
+                elements.facetsContainer.innerHTML = sortedFacets.map(facet => {
+                    const filterKey = facet.fieldName;
+                    const label = facetLabels[filterKey] || filterKey;
+
+                    if (!facet.values || facet.values.length === 0) {
+                        return '';
+                    }
+
+                    const sortedValues = sortFacetValues(filterKey, facet.values);
+                    const options = sortedValues.map(value => {
+                        const isChecked = state.filters[filterKey] && state.filters[filterKey].includes(value.key);
+                        return `
+                            <label class="filter-option">
+                                <input type="checkbox"
+                                       data-filter="${filterKey}"
+                                       value="${escapeHtml(value.key)}"
+                                       ${isChecked ? 'checked' : ''}>
+                                ${escapeHtml(value.key)}
+                                <span class="filter-count">(${value.count})</span>
+                            </label>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="filter-group">
+                            <h4>${label}</h4>
+                            ${options}
+                        </div>
+                    `;
+                }).join('');
+
+                elements.facetsContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', handleFilterChange);
+                });
+            }
+
+            function renderPagination() {
+                const totalPages = Math.ceil(state.total / state.take);
+                const currentPage = Math.floor(state.skip / state.take) + 1;
+
+                if (totalPages <= 1) {
+                    elements.paginationContainer.innerHTML = '';
+                    return;
+                }
+
+                let html = '';
+
+                html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">&laquo; Prev</button>`;
+
+                const startPage = Math.max(1, currentPage - 2);
+                const endPage = Math.min(totalPages, currentPage + 2);
+
+                if (startPage > 1) {
+                    html += `<button data-page="1">1</button>`;
+                    if (startPage > 2) {
+                        html += `<span>...</span>`;
+                    }
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    html += `<button data-page="${i}" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+                }
+
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        html += `<span>...</span>`;
+                    }
+                    html += `<button data-page="${totalPages}">${totalPages}</button>`;
+                }
+
+                html += `<button ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">Next &raquo;</button>`;
+
+                elements.paginationContainer.innerHTML = html;
+
+                elements.paginationContainer.querySelectorAll('button[data-page]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const page = parseInt(this.dataset.page);
+                        state.skip = (page - 1) * state.take;
+                        performSearch();
+                    });
+                });
+            }
+
+            function updateResultsCount() {
+                const start = state.skip + 1;
+                const end = Math.min(state.skip + state.take, state.total);
+
+                if (state.total === 0) {
+                    elements.resultsCount.textContent = 'No results';
+                } else {
+                    elements.resultsCount.textContent = `Showing ${start}-${end} of ${state.total} members`;
+                }
+            }
+
+            function handleFilterChange(e) {
+                const filterKey = e.target.dataset.filter;
+                const value = e.target.value;
+
+                if (e.target.checked) {
+                    if (!state.filters[filterKey].includes(value)) {
+                        state.filters[filterKey].push(value);
+                    }
+                } else {
+                    state.filters[filterKey] = state.filters[filterKey].filter(v => v !== value);
+                }
+
+                state.skip = 0;
+                performSearch();
+            }
+
+            function resetFilters() {
+                state.filters.length = [];
+                state.filters.authorNationality = [];
+                state.filters.publishYear = [];
+            }
+
+            function clearAllFilters() {
+                resetFilters();
+                state.skip = 0;
+                performSearch();
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            elements.searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                state.query = elements.searchQuery.value;
+                state.sortBy = elements.sortBy.value;
+                state.sortDirection = elements.sortDirection.value;
+                // TODO: include index alias selector here
+                // state.indexAlias = elements.indexAlias.value;
+                state.skip = 0;
+                performSearch();
+            });
+
+            elements.sortBy.addEventListener('change', function() {
+                state.sortBy = this.value;
+                state.skip = 0;
+                performSearch();
+            });
+
+            elements.sortDirection.addEventListener('change', function() {
+                state.sortDirection = this.value;
+                state.skip = 0;
+                performSearch();
+            });
+
+            // TODO: include index alias selector handler here
+            // elements.indexAlias.addEventListener('change', function() {
+            //     state.indexAlias = this.value;
+            //     resetFilters();
+            //     state.skip = 0;
+            //     performSearch();
+            // });
+
+            elements.clearFilters.addEventListener('click', clearAllFilters);
+
+            performSearch();
+        })();
+    </script>
+</body>
+</html>
