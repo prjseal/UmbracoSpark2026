@@ -20,5 +20,7 @@ public static class SiteConstants
     public static class IndexAliases
     {
         public const string CustomMemberIndex = "CustomMemberIndex";
+
+        public const string CustomPeopleIndex = "CustomPeopleIndex";
     }
 }

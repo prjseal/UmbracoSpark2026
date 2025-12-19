@@ -1,4 +1,5 @@
-﻿using Site.Services;
+﻿using Site.Extensions;
+using Site.Services;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
@@ -7,10 +8,11 @@ namespace Site.ContentIndexing;
 
 public class MemberAsPersonContentIndexer : IContentIndexer
 {
-    private readonly IMemberIndexFieldsForPersonHandler _memberIndexFieldsForPersonHandler;
+    private readonly IMemberToPersonService _memberToPersonService;
 
-    public MemberAsPersonContentIndexer(IMemberIndexFieldsForPersonHandler memberIndexFieldsForPersonHandler)
-        => _memberIndexFieldsForPersonHandler = memberIndexFieldsForPersonHandler;
+    public MemberAsPersonContentIndexer(IMemberToPersonService memberToPersonService)
+        => _memberToPersonService = memberToPersonService;
+
 
     public async Task<IEnumerable<IndexField>> GetIndexFieldsAsync(IContentBase content, string?[] cultures, bool published, CancellationToken cancellationToken)
     {
@@ -19,6 +21,7 @@ public class MemberAsPersonContentIndexer : IContentIndexer
             return [];
         }
 
-        return await _memberIndexFieldsForPersonHandler.GetIndexFieldsAsync(member);
+        var person = await _memberToPersonService.GetPersonForMemberAsync(member);
+        return person?.AsIndexFields() ?? [];
     }
 }

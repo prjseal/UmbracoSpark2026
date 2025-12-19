@@ -9,4 +9,6 @@ public interface IPeopleService
     Task<IEnumerable<Person>> GetAllAsync();
 
     Task<Person?> GetByIdAsync(Guid id);
+
+    Task<IEnumerable<Person>> GetByIdsAsync(params Guid[] ids);
 }

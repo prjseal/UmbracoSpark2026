@@ -46,6 +46,9 @@ public static partial class UmbracoBuilderExtensions
         // TODO: remove this once Elasticsearch is used
         builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(SiteConstants.IndexAliases.CustomMemberIndex, _ => { });
 
+        // TODO: remove this once Elasticsearch is used
+        builder.Services.AddExamineLuceneIndex<LuceneIndex, ConfigurationEnabledDirectoryFactory>(SiteConstants.IndexAliases.CustomPeopleIndex, _ => { });
+
         return builder;
     }
 

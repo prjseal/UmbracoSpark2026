@@ -1,4 +1,5 @@
-﻿using Site.Services;
+﻿using Site.Extensions;
+using Site.Services;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
@@ -14,7 +15,7 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
     // TODO: use Elasticsearch indexer instead
     private readonly IExamineIndexer _indexer;
     private readonly IMemberService _memberService;
-    private readonly IMemberIndexFieldsForPersonHandler _memberIndexFieldsForPersonHandler;
+    private readonly IMemberToPersonService _memberToPersonService;
     private readonly ILogger<MemberContentChangeStrategy> _logger;
 
     private string IndexAlias => SiteConstants.IndexAliases.CustomMemberIndex;
@@ -25,7 +26,7 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
         IEnumerable<IContentIndexer> contentIndexers,
         IExamineIndexer indexer,
         IMemberService memberService,
-        IMemberIndexFieldsForPersonHandler memberIndexFieldsForPersonHandler,
+        IMemberToPersonService memberToPersonService,
         ILogger<MemberContentChangeStrategy> logger
     )
     {
@@ -36,26 +37,31 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
         _indexer = indexer;
         _memberService = memberService;
         _logger = logger;
-        _memberIndexFieldsForPersonHandler = memberIndexFieldsForPersonHandler;
+        _memberToPersonService = memberToPersonService;
     }
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
     {
         // get the relevant changes for this change strategy
-        ContentChange[] changesAsArray = changes.Where(change =>
+        var changesAsArray = changes.Where(change =>
                 change.ContentState is ContentState.Draft
                 && change.ObjectType is UmbracoObjectTypes.Member)
             .ToArray();
 
+        if (changesAsArray.Length is 0)
+        {
+            return;
+        }
+
         // first handle all removals
-        Guid[] idsToRemove = changesAsArray
+        var idsToRemove = changesAsArray
             .Where(change => change.ChangeImpact is ChangeImpact.Remove)
             .Select(change => change.Id)
             .ToArray();
         await _indexer.DeleteAsync(IndexAlias, idsToRemove);
 
         // now handle all updates
-        Guid[] idsToUpdate = changesAsArray
+        var idsToUpdate = changesAsArray
             .Select(change => change.Id)
             .Except(idsToRemove)
             .ToArray();
@@ -157,8 +163,14 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
         }
 
         // append the "Person" fields from the people service
-        var personFields = await _memberIndexFieldsForPersonHandler.GetIndexFieldsAsync(member);
-        fields.AddRange(personFields);
+        var person = await _memberToPersonService.GetPersonForMemberAsync(member);
+        if (person is null)
+        {
+            _logger.LogWarning("No Person were found for member with ID: {id}", member.Key);
+            return;
+        }
+        
+        fields.AddRange(person.AsIndexFields());
 
         await _indexer.AddOrUpdateAsync(
             IndexAlias,

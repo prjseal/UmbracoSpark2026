@@ -67,7 +67,7 @@ public static partial class UmbracoBuilderExtensions
             .AddTransient<IMemberContentChangeStrategy, MemberContentChangeStrategy>()
             .AddSingleton<IPeopleService, PeopleService>()
             .AddSingleton<IMemberToPersonService, MemberToPersonService>()
-            .AddSingleton<IMemberIndexFieldsForPersonHandler, MemberIndexFieldsForPersonHandler>();
+            .AddSingleton<IPeopleIndexingService, PeopleIndexingService>();
 
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, UmbracoApplicationStartedNotificationHandler>();
 
