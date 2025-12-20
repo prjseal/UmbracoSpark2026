@@ -25,6 +25,27 @@ public static partial class UmbracoBuilderExtensions
             [
                 new ()
                 {
+                    PropertyName = "cuisine",
+                    FieldValues = FieldValues.Keywords,
+                    Facetable = true,
+                    Sortable = true
+                },
+                new ()
+                {
+                    PropertyName = "mealType",
+                    FieldValues = FieldValues.Keywords,
+                    Facetable = true
+                },
+                new ()
+                {
+                    PropertyName = "preparationTime",
+                    FieldValues = FieldValues.Integers,
+                    Facetable = true,
+                    Sortable = true
+                },
+                // TODO: clean this up when all member examples are moved to Elasticsearch
+                new ()
+                {
                     PropertyName = SiteConstants.FieldNames.Zodiac,
                     FieldValues = FieldValues.Keywords,
                     Facetable = true

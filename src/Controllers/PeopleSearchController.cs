@@ -123,6 +123,7 @@ public class PeopleSearchController : ControllerBase
             take: take);
 
         var people = await _peopleService.GetByIdsAsync(result.Documents.Select(d => d.Id).ToArray());
+        // TODO: sort the people collection by the order in the search results
 
         var personSearchResultItemModels = people
             .Select(person =>

@@ -72,7 +72,7 @@ public class MemberSearchController : ControllerBase
         [FromQuery] string[]? generation = null,
         string? sortBy = null,
         string? sortDirection = null,
-        string? provider = "default")
+        string provider = "default")
     {
         var filters = new List<Filter>();
 

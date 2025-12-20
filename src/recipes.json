@@ -1,0 +1,1268 @@
+[
+  {
+    "name": "Pizza Margherita",
+    "teaser": "A classic Italian pizza with fresh tomatoes, mozzarella, and basil",
+    "mealType": "Dinner",
+    "cuisine": "Italian",
+    "preparationTimeMinutes": 45,
+    "ingredients": [
+      "500g pizza dough",
+      "200g San Marzano tomatoes",
+      "200g fresh mozzarella",
+      "Fresh basil leaves",
+      "2 tbsp olive oil",
+      "Salt to taste"
+    ],
+    "steps": [
+      "Preheat oven to 250°C (480°F) with a pizza stone if available",
+      "Roll out the dough on a floured surface to desired thickness",
+      "Crush tomatoes by hand and spread evenly over the dough",
+      "Tear mozzarella into pieces and distribute over the pizza",
+      "Drizzle with olive oil and season with salt",
+      "Bake for 10-12 minutes until crust is golden and cheese is bubbly",
+      "Top with fresh basil leaves and serve immediately"
+    ]
+  },
+  {
+    "name": "Chicken Caesar Salad",
+    "teaser": "Crisp romaine lettuce with grilled chicken, parmesan, and creamy Caesar dressing",
+    "mealType": "Lunch",
+    "cuisine": "American",
+    "preparationTimeMinutes": 25,
+    "ingredients": [
+      "2 chicken breasts",
+      "1 large head romaine lettuce",
+      "50g parmesan cheese",
+      "100g croutons",
+      "4 tbsp Caesar dressing",
+      "1 lemon",
+      "Salt and pepper"
+    ],
+    "steps": [
+      "Season chicken breasts with salt and pepper",
+      "Grill chicken for 6-7 minutes per side until cooked through",
+      "Let chicken rest for 5 minutes, then slice",
+      "Wash and chop romaine lettuce into bite-sized pieces",
+      "Toss lettuce with Caesar dressing",
+      "Top with sliced chicken, croutons, and shaved parmesan",
+      "Squeeze fresh lemon juice over the salad and serve"
+    ]
+  },
+  {
+    "name": "Avocado Toast with Poached Eggs",
+    "teaser": "Creamy avocado on crusty bread topped with perfectly poached eggs",
+    "mealType": "Breakfast",
+    "cuisine": "American",
+    "preparationTimeMinutes": 15,
+    "ingredients": [
+      "2 slices sourdough bread",
+      "1 ripe avocado",
+      "2 eggs",
+      "1 tbsp white vinegar",
+      "Red pepper flakes",
+      "Salt and pepper",
+      "Olive oil"
+    ],
+    "steps": [
+      "Bring a pot of water to a gentle simmer and add vinegar",
+      "Toast the sourdough bread until golden",
+      "Mash avocado with salt, pepper, and a drizzle of olive oil",
+      "Create a whirlpool in the water and crack eggs into the center",
+      "Poach eggs for 3-4 minutes until whites are set",
+      "Spread mashed avocado on toast",
+      "Top each toast with a poached egg and sprinkle with red pepper flakes"
+    ]
+  },
+  {
+    "name": "Beef Tacos",
+    "teaser": "Seasoned ground beef in crispy shells with fresh toppings",
+    "mealType": "Dinner",
+    "cuisine": "Mexican",
+    "preparationTimeMinutes": 30,
+    "ingredients": [
+      "500g ground beef",
+      "8 taco shells",
+      "1 onion, diced",
+      "2 tbsp taco seasoning",
+      "100g shredded cheese",
+      "Lettuce, shredded",
+      "2 tomatoes, diced",
+      "Sour cream",
+      "Salsa"
+    ],
+    "steps": [
+      "Brown ground beef in a skillet over medium-high heat",
+      "Add diced onion and cook until softened",
+      "Stir in taco seasoning and 100ml water",
+      "Simmer for 5 minutes until sauce thickens",
+      "Warm taco shells according to package directions",
+      "Fill shells with seasoned beef",
+      "Top with cheese, lettuce, tomatoes, sour cream, and salsa"
+    ]
+  },
+  {
+    "name": "Greek Yogurt Parfait",
+    "teaser": "Layers of creamy yogurt, crunchy granola, and fresh berries",
+    "mealType": "Breakfast",
+    "cuisine": "American",
+    "preparationTimeMinutes": 10,
+    "ingredients": [
+      "300g Greek yogurt",
+      "100g granola",
+      "150g mixed berries",
+      "2 tbsp honey",
+      "1 tbsp chia seeds"
+    ],
+    "steps": [
+      "Spoon a layer of Greek yogurt into serving glasses",
+      "Add a layer of granola",
+      "Add a layer of mixed berries",
+      "Repeat layers until glasses are full",
+      "Drizzle honey over the top",
+      "Sprinkle with chia seeds and serve immediately"
+    ]
+  },
+  {
+    "name": "Spaghetti Carbonara",
+    "teaser": "Classic Roman pasta with creamy egg sauce, pancetta, and pecorino",
+    "mealType": "Dinner",
+    "cuisine": "Italian",
+    "preparationTimeMinutes": 25,
+    "ingredients": [
+      "400g spaghetti",
+      "200g pancetta or guanciale",
+      "4 egg yolks",
+      "100g pecorino Romano cheese",
+      "Black pepper",
+      "Salt"
+    ],
+    "steps": [
+      "Bring a large pot of salted water to boil and cook spaghetti",
+      "Cut pancetta into small cubes and fry until crispy",
+      "Mix egg yolks with grated pecorino and plenty of black pepper",
+      "Reserve 1 cup pasta water, then drain spaghetti",
+      "Add hot pasta to the pancetta pan (off heat)",
+      "Quickly stir in the egg mixture, adding pasta water to create a creamy sauce",
+      "Serve immediately with extra pecorino and black pepper"
+    ]
+  },
+  {
+    "name": "Tomato Basil Soup",
+    "teaser": "Velvety smooth tomato soup with fresh basil and a hint of cream",
+    "mealType": "Lunch",
+    "cuisine": "Italian",
+    "preparationTimeMinutes": 40,
+    "ingredients": [
+      "1kg ripe tomatoes",
+      "1 onion",
+      "3 cloves garlic",
+      "500ml vegetable stock",
+      "Fresh basil",
+      "100ml heavy cream",
+      "2 tbsp olive oil",
+      "Salt and pepper"
+    ],
+    "steps": [
+      "Halve tomatoes and roast at 200°C for 20 minutes",
+      "Sauté diced onion and garlic in olive oil until soft",
+      "Add roasted tomatoes and vegetable stock",
+      "Simmer for 15 minutes",
+      "Blend until smooth using an immersion blender",
+      "Stir in cream and season with salt and pepper",
+      "Garnish with fresh basil and serve with crusty bread"
+    ]
+  },
+  {
+    "name": "Chicken Stir-Fry",
+    "teaser": "Quick and colorful stir-fry with tender chicken and crisp vegetables",
+    "mealType": "Dinner",
+    "cuisine": "Chinese",
+    "preparationTimeMinutes": 20,
+    "ingredients": [
+      "400g chicken breast, sliced",
+      "1 red bell pepper",
+      "1 yellow bell pepper",
+      "200g broccoli florets",
+      "3 tbsp soy sauce",
+      "2 tbsp sesame oil",
+      "2 cloves garlic",
+      "1 tbsp ginger, minced",
+      "Cooked rice for serving"
+    ],
+    "steps": [
+      "Slice chicken and vegetables into bite-sized pieces",
+      "Heat sesame oil in a wok over high heat",
+      "Stir-fry chicken until golden, about 5 minutes",
+      "Add garlic and ginger, cook for 30 seconds",
+      "Add vegetables and stir-fry for 3-4 minutes",
+      "Pour in soy sauce and toss to coat",
+      "Serve immediately over steamed rice"
+    ]
+  },
+  {
+    "name": "Overnight Oats",
+    "teaser": "No-cook oats soaked overnight for a quick, healthy breakfast",
+    "mealType": "Breakfast",
+    "cuisine": "American",
+    "preparationTimeMinutes": 5,
+    "ingredients": [
+      "100g rolled oats",
+      "200ml milk",
+      "100g Greek yogurt",
+      "1 tbsp maple syrup",
+      "1 banana",
+      "1 tbsp peanut butter",
+      "Cinnamon to taste"
+    ],
+    "steps": [
+      "Combine oats, milk, and yogurt in a jar",
+      "Add maple syrup and a pinch of cinnamon",
+      "Stir well and refrigerate overnight",
+      "In the morning, slice banana on top",
+      "Add a dollop of peanut butter",
+      "Stir and enjoy cold or microwave for 2 minutes if preferred"
+    ]
+  },
+  {
+    "name": "Grilled Salmon with Asparagus",
+    "teaser": "Perfectly grilled salmon fillet with tender asparagus and lemon butter",
+    "mealType": "Dinner",
+    "cuisine": "American",
+    "preparationTimeMinutes": 25,
+    "ingredients": [
+      "2 salmon fillets",
+      "1 bunch asparagus",
+      "3 tbsp butter",
+      "2 lemons",
+      "2 cloves garlic",
+      "Fresh dill",
+      "Salt and pepper",
+      "Olive oil"
+    ],
+    "steps": [
+      "Preheat grill to medium-high heat",
+      "Season salmon with salt, pepper, and olive oil",
+      "Trim asparagus and toss with olive oil and garlic",
+      "Grill salmon for 4-5 minutes per side",
+      "Grill asparagus for 3-4 minutes, turning occasionally",
+      "Melt butter with lemon juice and chopped dill",
+      "Plate salmon and asparagus, drizzle with lemon butter sauce"
+    ]
+  },
+  {
+    "name": "Veggie Wrap",
+    "teaser": "Fresh vegetables and hummus wrapped in a soft tortilla",
+    "mealType": "Lunch",
+    "cuisine": "Mediterranean",
+    "preparationTimeMinutes": 15,
+    "ingredients": [
+      "2 large flour tortillas",
+      "100g hummus",
+      "1 cucumber",
+      "1 carrot",
+      "1 avocado",
+      "100g mixed greens",
+      "50g feta cheese",
+      "Salt and pepper"
+    ],
+    "steps": [
+      "Spread hummus generously over each tortilla",
+      "Slice cucumber and carrot into thin strips",
+      "Slice avocado",
+      "Layer vegetables and mixed greens on the tortilla",
+      "Crumble feta cheese on top",
+      "Season with salt and pepper",
+      "Roll up tightly, tucking in the sides",
+      "Cut in half diagonally and serve"
+    ]
+  },
+  {
+    "name": "Mushroom Risotto",
+    "teaser": "Creamy Italian rice dish with earthy mushrooms and parmesan",
+    "mealType": "Dinner",
+    "cuisine": "Italian",
+    "preparationTimeMinutes": 45,
+    "ingredients": [
+      "300g arborio rice",
+      "300g mixed mushrooms",
+      "1 onion",
+      "150ml white wine",
+      "1L vegetable stock",
+      "50g parmesan cheese",
+      "50g butter",
+      "2 tbsp olive oil",
+      "Fresh thyme"
+    ],
+    "steps": [
+      "Heat stock in a saucepan and keep warm",
+      "Sauté sliced mushrooms in butter until golden, set aside",
+      "In the same pan, cook diced onion in olive oil until soft",
+      "Add rice and toast for 2 minutes",
+      "Pour in wine and stir until absorbed",
+      "Add stock one ladle at a time, stirring constantly",
+      "Continue for 18-20 minutes until rice is creamy",
+      "Stir in mushrooms, parmesan, and fresh thyme"
+    ]
+  },
+  {
+    "name": "French Toast",
+    "teaser": "Golden, crispy slices of bread soaked in cinnamon egg batter",
+    "mealType": "Breakfast",
+    "cuisine": "French",
+    "preparationTimeMinutes": 20,
+    "ingredients": [
+      "4 thick slices brioche bread",
+      "3 eggs",
+      "100ml milk",
+      "1 tsp vanilla extract",
+      "1 tsp cinnamon",
+      "Butter for frying",
+      "Maple syrup",
+      "Fresh berries"
+    ],
+    "steps": [
+      "Whisk together eggs, milk, vanilla, and cinnamon",
+      "Heat butter in a large skillet over medium heat",
+      "Dip each bread slice in the egg mixture, coating both sides",
+      "Fry for 3-4 minutes per side until golden brown",
+      "Serve with maple syrup and fresh berries",
+      "Dust with powdered sugar if desired"
+    ]
+  },
+  {
+    "name": "Thai Green Curry",
+    "teaser": "Aromatic coconut curry with chicken, vegetables, and Thai basil",
+    "mealType": "Dinner",
+    "cuisine": "Thai",
+    "preparationTimeMinutes": 35,
+    "ingredients": [
+      "400g chicken thighs, cubed",
+      "400ml coconut milk",
+      "3 tbsp green curry paste",
+      "200g bamboo shoots",
+      "1 red bell pepper",
+      "100g green beans",
+      "2 tbsp fish sauce",
+      "1 tbsp palm sugar",
+      "Thai basil leaves",
+      "Jasmine rice for serving"
+    ],
+    "steps": [
+      "Heat a splash of coconut milk in a wok until it separates",
+      "Add curry paste and fry for 1-2 minutes until fragrant",
+      "Add chicken and cook until sealed",
+      "Pour in remaining coconut milk and bring to a simmer",
+      "Add vegetables and cook for 10 minutes",
+      "Season with fish sauce and palm sugar",
+      "Stir in Thai basil leaves",
+      "Serve over jasmine rice"
+    ]
+  },
+  {
+    "name": "Caprese Sandwich",
+    "teaser": "Fresh mozzarella, tomatoes, and basil on crusty ciabatta",
+    "mealType": "Lunch",
+    "cuisine": "Italian",
+    "preparationTimeMinutes": 10,
+    "ingredients": [
+      "1 ciabatta roll",
+      "150g fresh mozzarella",
+      "2 ripe tomatoes",
+      "Fresh basil leaves",
+      "2 tbsp balsamic glaze",
+      "2 tbsp olive oil",
+      "Salt and pepper"
+    ],
+    "steps": [
+      "Slice ciabatta roll in half horizontally",
+      "Drizzle olive oil on both cut sides",
+      "Layer sliced mozzarella on the bottom half",
+      "Add sliced tomatoes on top of the cheese",
+      "Season with salt and pepper",
+      "Add fresh basil leaves",
+      "Drizzle with balsamic glaze",
+      "Close sandwich and press gently"
+    ]
+  },
+  {
+    "name": "Beef Bourguignon",
+    "teaser": "Rich French stew with tender beef, red wine, and aromatic vegetables",
+    "mealType": "Dinner",
+    "cuisine": "French",
+    "preparationTimeMinutes": 180,
+    "ingredients": [
+      "1kg beef chuck, cubed",
+      "750ml red wine",
+      "200g bacon lardons",
+      "300g pearl onions",
+      "250g mushrooms",
+      "3 carrots",
+      "4 cloves garlic",
+      "2 tbsp tomato paste",
+      "Fresh thyme and bay leaves",
+      "Beef stock"
+    ],
+    "steps": [
+      "Brown beef cubes in batches and set aside",
+      "Cook bacon until crispy, then sauté onions and carrots",
+      "Add garlic and tomato paste, cook for 1 minute",
+      "Return beef to pot and add wine and stock",
+      "Add herbs and bring to a simmer",
+      "Cover and cook in oven at 160°C for 2.5 hours",
+      "Add mushrooms in the last 30 minutes",
+      "Serve with mashed potatoes or crusty bread"
+    ]
+  },
+  {
+    "name": "Eggs Benedict",
+    "teaser": "Poached eggs and Canadian bacon on English muffins with hollandaise",
+    "mealType": "Breakfast",
+    "cuisine": "American",
+    "preparationTimeMinutes": 30,
+    "ingredients": [
+      "4 eggs",
+      "2 English muffins",
+      "4 slices Canadian bacon",
+      "3 egg yolks",
+      "150g butter",
+      "1 lemon",
+      "White vinegar",
+      "Chives for garnish"
+    ],
+    "steps": [
+      "Make hollandaise: whisk egg yolks over double boiler",
+      "Slowly add melted butter while whisking constantly",
+      "Add lemon juice and season, keep warm",
+      "Toast English muffins and warm Canadian bacon",
+      "Poach eggs in simmering water with vinegar",
+      "Assemble: muffin, bacon, poached egg",
+      "Spoon hollandaise over the top",
+      "Garnish with chives and serve immediately"
+    ]
+  },
+  {
+    "name": "Pad Thai",
+    "teaser": "Classic Thai rice noodles with shrimp, peanuts, and tamarind sauce",
+    "mealType": "Dinner",
+    "cuisine": "Thai",
+    "preparationTimeMinutes": 30,
+    "ingredients": [
+      "250g rice noodles",
+      "300g shrimp, peeled",
+      "3 eggs",
+      "200g bean sprouts",
+      "4 green onions",
+      "3 tbsp tamarind paste",
+      "2 tbsp fish sauce",
+      "2 tbsp palm sugar",
+      "Crushed peanuts",
+      "Lime wedges"
+    ],
+    "steps": [
+      "Soak rice noodles in warm water for 30 minutes",
+      "Mix tamarind paste, fish sauce, and palm sugar for sauce",
+      "Stir-fry shrimp until pink, set aside",
+      "Scramble eggs in the wok",
+      "Add drained noodles and sauce, toss well",
+      "Add shrimp, bean sprouts, and green onions",
+      "Serve topped with crushed peanuts and lime wedges"
+    ]
+  },
+  {
+    "name": "Minestrone Soup",
+    "teaser": "Hearty Italian vegetable soup with pasta and white beans",
+    "mealType": "Lunch",
+    "cuisine": "Italian",
+    "preparationTimeMinutes": 50,
+    "ingredients": [
+      "2 carrots",
+      "2 celery stalks",
+      "1 zucchini",
+      "400g canned tomatoes",
+      "400g cannellini beans",
+      "100g small pasta",
+      "1L vegetable stock",
+      "Fresh basil",
+      "Parmesan rind",
+      "Olive oil"
+    ],
+    "steps": [
+      "Dice carrots, celery, and zucchini",
+      "Sauté vegetables in olive oil until softened",
+      "Add tomatoes and stock, bring to a boil",
+      "Add parmesan rind for flavor",
+      "Simmer for 20 minutes",
+      "Add pasta and beans, cook until pasta is tender",
+      "Remove parmesan rind before serving",
+      "Top with fresh basil and grated parmesan"
+    ]
+  },
+  {
+    "name": "Shakshuka",
+    "teaser": "Eggs poached in spiced tomato sauce with peppers and onions",
+    "mealType": "Breakfast",
+    "cuisine": "Middle Eastern",
+    "preparationTimeMinutes": 35,
+    "ingredients": [
+      "6 eggs",
+      "800g canned tomatoes",
+      "2 red bell peppers",
+      "1 onion",
+      "4 cloves garlic",
+      "2 tsp cumin",
+      "2 tsp paprika",
+      "1 tsp chili flakes",
+      "Fresh cilantro",
+      "Crusty bread for serving"
+    ],
+    "steps": [
+      "Sauté diced peppers and onion until soft",
+      "Add garlic and spices, cook for 1 minute",
+      "Pour in tomatoes and simmer for 15 minutes",
+      "Make 6 wells in the sauce",
+      "Crack an egg into each well",
+      "Cover and cook until eggs are set, about 8 minutes",
+      "Garnish with cilantro and serve with bread"
+    ]
+  },
+  {
+    "name": "Chicken Tikka Masala",
+    "teaser": "Tender chicken in creamy, spiced tomato curry sauce",
+    "mealType": "Dinner",
+    "cuisine": "Indian",
+    "preparationTimeMinutes": 45,
+    "ingredients": [
+      "600g chicken breast, cubed",
+      "200g yogurt",
+      "400g canned tomatoes",
+      "200ml heavy cream",
+      "2 onions",
+      "4 cloves garlic",
+      "2 tbsp garam masala",
+      "1 tbsp turmeric",
+      "Fresh cilantro",
+      "Basmati rice for serving"
+    ],
+    "steps": [
+      "Marinate chicken in yogurt with half the spices for 30 minutes",
+      "Grill or pan-fry chicken until charred",
+      "Sauté onions and garlic until golden",
+      "Add remaining spices and tomatoes",
+      "Simmer for 15 minutes",
+      "Stir in cream and add chicken",
+      "Cook for 10 more minutes",
+      "Garnish with cilantro and serve with rice"
+    ]
+  },
+  {
+    "name": "BLT Sandwich",
+    "teaser": "Crispy bacon, fresh lettuce, and ripe tomatoes on toasted bread",
+    "mealType": "Lunch",
+    "cuisine": "American",
+    "preparationTimeMinutes": 15,
+    "ingredients": [
+      "6 strips bacon",
+      "4 slices bread",
+      "2 tomatoes",
+      "Lettuce leaves",
+      "3 tbsp mayonnaise",
+      "Salt and pepper"
+    ],
+    "steps": [
+      "Cook bacon until crispy",
+      "Toast bread slices until golden",
+      "Spread mayonnaise on all slices",
+      "Layer lettuce on bottom slices",
+      "Add sliced tomatoes and season",
+      "Top with bacon strips",
+      "Close sandwiches and cut diagonally"
+    ]
+  },
+  {
+    "name": "Lamb Kebabs",
+    "teaser": "Grilled marinated lamb skewers with Middle Eastern spices",
+    "mealType": "Dinner",
+    "cuisine": "Middle Eastern",
+    "preparationTimeMinutes": 40,
+    "ingredients": [
+      "600g lamb leg, cubed",
+      "1 onion, grated",
+      "4 cloves garlic",
+      "2 tbsp olive oil",
+      "1 tbsp cumin",
+      "1 tbsp coriander",
+      "1 tsp sumac",
+      "Pita bread",
+      "Tzatziki sauce"
+    ],
+    "steps": [
+      "Mix onion, garlic, oil, and spices for marinade",
+      "Toss lamb in marinade and refrigerate for 2 hours",
+      "Thread lamb onto metal skewers",
+      "Preheat grill to high heat",
+      "Grill kebabs for 3-4 minutes per side",
+      "Rest for 5 minutes before serving",
+      "Serve with warm pita and tzatziki"
+    ]
+  },
+  {
+    "name": "Banana Pancakes",
+    "teaser": "Fluffy pancakes studded with caramelized banana slices",
+    "mealType": "Breakfast",
+    "cuisine": "American",
+    "preparationTimeMinutes": 25,
+    "ingredients": [
+      "200g flour",
+      "2 eggs",
+      "250ml milk",
+      "2 ripe bananas",
+      "2 tbsp sugar",
+      "1 tsp baking powder",
+      "Butter for cooking",
+      "Maple syrup"
+    ],
+    "steps": [
+      "Mix flour, sugar, and baking powder",
+      "Whisk eggs and milk together",
+      "Combine wet and dry ingredients",
+      "Slice bananas",
+      "Heat butter in a pan over medium heat",
+      "Pour batter and add banana slices on top",
+      "Flip when bubbles form and cook until golden",
+      "Serve with maple syrup and extra banana"
+    ]
+  },
+  {
+    "name": "Shrimp Scampi",
+    "teaser": "Garlic butter shrimp over linguine with white wine and lemon",
+    "mealType": "Dinner",
+    "cuisine": "Italian",
+    "preparationTimeMinutes": 25,
+    "ingredients": [
+      "500g large shrimp, peeled",
+      "400g linguine",
+      "100g butter",
+      "6 cloves garlic",
+      "150ml white wine",
+      "2 lemons",
+      "Fresh parsley",
+      "Red pepper flakes",
+      "Olive oil"
+    ],
+    "steps": [
+      "Cook linguine according to package directions",
+      "Sauté garlic in butter and olive oil",
+      "Add shrimp and cook until pink",
+      "Pour in white wine and lemon juice",
+      "Simmer for 2-3 minutes",
+      "Toss with drained pasta",
+      "Add parsley and red pepper flakes",
+      "Serve immediately with lemon wedges"
+    ]
+  },
+  {
+    "name": "Quinoa Buddha Bowl",
+    "teaser": "Nourishing bowl with quinoa, roasted vegetables, and tahini dressing",
+    "mealType": "Lunch",
+    "cuisine": "American",
+    "preparationTimeMinutes": 40,
+    "ingredients": [
+      "200g quinoa",
+      "1 sweet potato",
+      "200g chickpeas",
+      "1 avocado",
+      "100g kale",
+      "2 tbsp tahini",
+      "1 lemon",
+      "Olive oil",
+      "Cumin and paprika"
+    ],
+    "steps": [
+      "Cook quinoa according to package directions",
+      "Cube sweet potato and roast at 200°C for 25 minutes",
+      "Toss chickpeas with spices and roast alongside",
+      "Massage kale with olive oil and lemon",
+      "Make dressing: whisk tahini, lemon, and water",
+      "Assemble bowls with quinoa base",
+      "Top with vegetables, chickpeas, and avocado",
+      "Drizzle with tahini dressing"
+    ]
+  },
+  {
+    "name": "Lasagna Bolognese",
+    "teaser": "Layers of pasta, rich meat sauce, and creamy béchamel",
+    "mealType": "Dinner",
+    "cuisine": "Italian",
+    "preparationTimeMinutes": 90,
+    "ingredients": [
+      "500g ground beef",
+      "400g canned tomatoes",
+      "12 lasagna sheets",
+      "500ml milk",
+      "50g butter",
+      "50g flour",
+      "100g parmesan",
+      "1 onion",
+      "2 carrots",
+      "Nutmeg"
+    ],
+    "steps": [
+      "Make Bolognese: brown beef, add vegetables and tomatoes, simmer 30 minutes",
+      "Make béchamel: melt butter, whisk in flour, add milk gradually",
+      "Season béchamel with nutmeg and parmesan",
+      "Layer: sauce, pasta, béchamel, repeat",
+      "Top final layer with extra béchamel and parmesan",
+      "Bake at 180°C for 45 minutes",
+      "Rest for 10 minutes before serving"
+    ]
+  },
+  {
+    "name": "Acai Bowl",
+    "teaser": "Frozen acai blended smooth and topped with fresh fruits and granola",
+    "mealType": "Breakfast",
+    "cuisine": "Brazilian",
+    "preparationTimeMinutes": 10,
+    "ingredients": [
+      "200g frozen acai puree",
+      "1 banana",
+      "100ml almond milk",
+      "50g granola",
+      "Fresh berries",
+      "Sliced banana",
+      "2 tbsp honey",
+      "Chia seeds"
+    ],
+    "steps": [
+      "Blend frozen acai with banana and almond milk",
+      "Pour thick mixture into a bowl",
+      "Arrange sliced banana on one side",
+      "Add fresh berries",
+      "Sprinkle granola on top",
+      "Drizzle with honey",
+      "Add chia seeds and serve immediately"
+    ]
+  },
+  {
+    "name": "Fish and Chips",
+    "teaser": "Beer-battered cod with crispy golden chips and mushy peas",
+    "mealType": "Dinner",
+    "cuisine": "British",
+    "preparationTimeMinutes": 45,
+    "ingredients": [
+      "4 cod fillets",
+      "200g flour",
+      "300ml cold beer",
+      "1kg potatoes",
+      "300g peas",
+      "Vegetable oil for frying",
+      "Malt vinegar",
+      "Lemon wedges"
+    ],
+    "steps": [
+      "Cut potatoes into thick chips and soak in cold water",
+      "Make batter: whisk flour and beer until smooth",
+      "Heat oil to 180°C",
+      "Par-fry chips for 5 minutes, drain",
+      "Dip fish in batter and fry until golden, about 6 minutes",
+      "Fry chips again until crispy",
+      "Mash peas with butter and mint",
+      "Serve with vinegar and lemon"
+    ]
+  },
+  {
+    "name": "Chicken Noodle Soup",
+    "teaser": "Comforting homemade soup with tender chicken and egg noodles",
+    "mealType": "Lunch",
+    "cuisine": "American",
+    "preparationTimeMinutes": 50,
+    "ingredients": [
+      "2 chicken breasts",
+      "200g egg noodles",
+      "3 carrots",
+      "3 celery stalks",
+      "1 onion",
+      "1.5L chicken stock",
+      "Fresh thyme",
+      "Fresh parsley",
+      "Bay leaves"
+    ],
+    "steps": [
+      "Poach chicken breasts in stock with herbs for 20 minutes",
+      "Remove chicken and shred with forks",
+      "Dice carrots, celery, and onion",
+      "Sauté vegetables in the pot until soft",
+      "Return stock to pot and bring to a boil",
+      "Add noodles and cook until tender",
+      "Return shredded chicken to soup",
+      "Season and garnish with fresh parsley"
+    ]
+  },
+  {
+    "name": "Stuffed Bell Peppers",
+    "teaser": "Colorful peppers filled with seasoned rice, beef, and melted cheese",
+    "mealType": "Dinner",
+    "cuisine": "American",
+    "preparationTimeMinutes": 60,
+    "ingredients": [
+      "6 bell peppers",
+      "400g ground beef",
+      "200g cooked rice",
+      "400g canned tomatoes",
+      "150g shredded cheese",
+      "1 onion",
+      "2 cloves garlic",
+      "Italian seasoning",
+      "Fresh parsley"
+    ],
+    "steps": [
+      "Cut tops off peppers and remove seeds",
+      "Brown beef with onion and garlic",
+      "Mix beef with rice, half the tomatoes, and seasoning",
+      "Stuff peppers with the mixture",
+      "Place in baking dish and pour remaining tomatoes around",
+      "Cover and bake at 180°C for 40 minutes",
+      "Uncover, top with cheese, bake 10 more minutes",
+      "Garnish with parsley and serve"
+    ]
+  },
+  {
+    "name": "Smoothie Bowl",
+    "teaser": "Thick blended fruits topped with seeds, nuts, and coconut",
+    "mealType": "Breakfast",
+    "cuisine": "American",
+    "preparationTimeMinutes": 10,
+    "ingredients": [
+      "2 frozen bananas",
+      "150g frozen mango",
+      "100ml coconut milk",
+      "2 tbsp almond butter",
+      "Sliced kiwi",
+      "Coconut flakes",
+      "Pumpkin seeds",
+      "Goji berries"
+    ],
+    "steps": [
+      "Blend frozen bananas and mango with coconut milk",
+      "Add almond butter and blend until thick",
+      "Pour into a bowl",
+      "Arrange sliced kiwi on top",
+      "Sprinkle with coconut flakes",
+      "Add pumpkin seeds and goji berries",
+      "Serve immediately while cold"
+    ]
+  },
+  {
+    "name": "Ramen",
+    "teaser": "Japanese noodle soup with rich broth, soft-boiled egg, and pork",
+    "mealType": "Dinner",
+    "cuisine": "Japanese",
+    "preparationTimeMinutes": 60,
+    "ingredients": [
+      "400g ramen noodles",
+      "300g pork belly",
+      "1L chicken stock",
+      "4 eggs",
+      "4 tbsp miso paste",
+      "200g corn kernels",
+      "4 green onions",
+      "Nori sheets",
+      "Sesame oil"
+    ],
+    "steps": [
+      "Simmer pork belly in stock for 40 minutes until tender",
+      "Soft-boil eggs for 7 minutes, then marinate in soy sauce",
+      "Whisk miso paste into the hot broth",
+      "Cook ramen noodles according to package",
+      "Slice pork belly thinly",
+      "Divide noodles among bowls",
+      "Ladle broth over noodles",
+      "Top with pork, halved egg, corn, nori, and green onions"
+    ]
+  },
+  {
+    "name": "Cobb Salad",
+    "teaser": "Classic American salad with chicken, bacon, eggs, and blue cheese",
+    "mealType": "Lunch",
+    "cuisine": "American",
+    "preparationTimeMinutes": 30,
+    "ingredients": [
+      "2 chicken breasts",
+      "6 strips bacon",
+      "4 eggs, hard-boiled",
+      "2 avocados",
+      "200g cherry tomatoes",
+      "100g blue cheese",
+      "1 head romaine lettuce",
+      "Ranch dressing"
+    ],
+    "steps": [
+      "Grill chicken breasts and slice",
+      "Cook bacon until crispy and chop",
+      "Halve cherry tomatoes",
+      "Dice avocados",
+      "Quarter hard-boiled eggs",
+      "Chop lettuce and arrange on platter",
+      "Arrange all toppings in rows over lettuce",
+      "Crumble blue cheese on top and serve with ranch"
+    ]
+  },
+  {
+    "name": "Vegetable Curry",
+    "teaser": "Fragrant Indian curry loaded with vegetables in coconut sauce",
+    "mealType": "Dinner",
+    "cuisine": "Indian",
+    "preparationTimeMinutes": 40,
+    "ingredients": [
+      "2 potatoes",
+      "200g cauliflower",
+      "200g chickpeas",
+      "400ml coconut milk",
+      "3 tbsp curry powder",
+      "1 onion",
+      "4 cloves garlic",
+      "1 can diced tomatoes",
+      "Fresh cilantro",
+      "Naan bread"
+    ],
+    "steps": [
+      "Cube potatoes and break cauliflower into florets",
+      "Sauté onion and garlic until fragrant",
+      "Add curry powder and cook for 1 minute",
+      "Add tomatoes and coconut milk",
+      "Add potatoes and simmer for 15 minutes",
+      "Add cauliflower and chickpeas",
+      "Cook until vegetables are tender",
+      "Serve with cilantro and warm naan"
+    ]
+  },
+  {
+    "name": "Eggs Florentine",
+    "teaser": "Poached eggs on spinach and English muffin with hollandaise",
+    "mealType": "Breakfast",
+    "cuisine": "French",
+    "preparationTimeMinutes": 25,
+    "ingredients": [
+      "4 eggs",
+      "200g fresh spinach",
+      "2 English muffins",
+      "3 egg yolks",
+      "150g butter",
+      "1 lemon",
+      "1 clove garlic",
+      "Nutmeg"
+    ],
+    "steps": [
+      "Make hollandaise: whisk yolks, slowly add melted butter",
+      "Season with lemon juice and keep warm",
+      "Sauté spinach with garlic until wilted",
+      "Season with nutmeg",
+      "Toast English muffins",
+      "Poach eggs until whites are set",
+      "Layer: muffin, spinach, poached egg",
+      "Top with hollandaise and serve"
+    ]
+  },
+  {
+    "name": "Beef Stroganoff",
+    "teaser": "Tender beef strips in creamy mushroom sauce over egg noodles",
+    "mealType": "Dinner",
+    "cuisine": "Russian",
+    "preparationTimeMinutes": 35,
+    "ingredients": [
+      "500g beef sirloin, sliced",
+      "300g mushrooms",
+      "1 onion",
+      "200ml beef stock",
+      "200ml sour cream",
+      "2 tbsp flour",
+      "400g egg noodles",
+      "Fresh parsley",
+      "Butter"
+    ],
+    "steps": [
+      "Season and sear beef strips, set aside",
+      "Sauté onion and mushrooms in butter",
+      "Sprinkle flour and stir for 1 minute",
+      "Add beef stock and simmer until thickened",
+      "Return beef to pan",
+      "Stir in sour cream and heat through",
+      "Cook egg noodles",
+      "Serve stroganoff over noodles with parsley"
+    ]
+  },
+  {
+    "name": "Greek Salad",
+    "teaser": "Fresh Mediterranean salad with tomatoes, cucumber, olives, and feta",
+    "mealType": "Lunch",
+    "cuisine": "Greek",
+    "preparationTimeMinutes": 15,
+    "ingredients": [
+      "4 ripe tomatoes",
+      "1 cucumber",
+      "1 red onion",
+      "200g feta cheese",
+      "100g Kalamata olives",
+      "1 green bell pepper",
+      "4 tbsp olive oil",
+      "2 tbsp red wine vinegar",
+      "Dried oregano"
+    ],
+    "steps": [
+      "Cut tomatoes into wedges",
+      "Slice cucumber into half-moons",
+      "Thinly slice red onion",
+      "Slice bell pepper into rings",
+      "Combine vegetables in a bowl",
+      "Add olives",
+      "Place feta block on top",
+      "Drizzle with oil and vinegar, sprinkle oregano"
+    ]
+  },
+  {
+    "name": "Pulled Pork Sandwich",
+    "teaser": "Slow-cooked pork shoulder in BBQ sauce on a soft brioche bun",
+    "mealType": "Dinner",
+    "cuisine": "American",
+    "preparationTimeMinutes": 240,
+    "ingredients": [
+      "1.5kg pork shoulder",
+      "250ml BBQ sauce",
+      "1 onion",
+      "4 cloves garlic",
+      "2 tbsp brown sugar",
+      "1 tbsp smoked paprika",
+      "Apple cider vinegar",
+      "Brioche buns",
+      "Coleslaw"
+    ],
+    "steps": [
+      "Rub pork with sugar, paprika, and spices",
+      "Place in slow cooker with onion and garlic",
+      "Cook on low for 8 hours or high for 4 hours",
+      "Shred pork with two forks",
+      "Mix with BBQ sauce and vinegar",
+      "Toast brioche buns",
+      "Pile pulled pork on buns",
+      "Top with coleslaw and serve"
+    ]
+  },
+  {
+    "name": "Huevos Rancheros",
+    "teaser": "Mexican breakfast with fried eggs on tortillas with salsa and beans",
+    "mealType": "Breakfast",
+    "cuisine": "Mexican",
+    "preparationTimeMinutes": 25,
+    "ingredients": [
+      "4 eggs",
+      "4 corn tortillas",
+      "400g black beans",
+      "300g tomato salsa",
+      "100g queso fresco",
+      "1 avocado",
+      "Fresh cilantro",
+      "Lime wedges",
+      "Vegetable oil"
+    ],
+    "steps": [
+      "Warm black beans in a saucepan",
+      "Fry tortillas until slightly crispy",
+      "Fry eggs sunny-side up",
+      "Warm salsa in a pan",
+      "Place tortillas on plates",
+      "Spread beans on tortillas",
+      "Top with fried eggs and salsa",
+      "Garnish with avocado, cheese, and cilantro"
+    ]
+  },
+  {
+    "name": "Teriyaki Salmon Bowl",
+    "teaser": "Glazed salmon over rice with edamame, cucumber, and pickled ginger",
+    "mealType": "Dinner",
+    "cuisine": "Japanese",
+    "preparationTimeMinutes": 30,
+    "ingredients": [
+      "2 salmon fillets",
+      "4 tbsp teriyaki sauce",
+      "300g sushi rice",
+      "150g edamame",
+      "1 cucumber",
+      "1 avocado",
+      "Pickled ginger",
+      "Sesame seeds",
+      "Nori strips"
+    ],
+    "steps": [
+      "Cook sushi rice according to package",
+      "Brush salmon with teriyaki and bake at 200°C for 15 minutes",
+      "Cook edamame and slice cucumber",
+      "Slice avocado",
+      "Divide rice among bowls",
+      "Flake salmon over rice",
+      "Arrange vegetables around salmon",
+      "Top with ginger, sesame seeds, and nori"
+    ]
+  },
+  {
+    "name": "Falafel Pita",
+    "teaser": "Crispy chickpea fritters in warm pita with tahini and vegetables",
+    "mealType": "Lunch",
+    "cuisine": "Middle Eastern",
+    "preparationTimeMinutes": 45,
+    "ingredients": [
+      "400g dried chickpeas, soaked",
+      "1 onion",
+      "4 cloves garlic",
+      "Fresh parsley and cilantro",
+      "2 tsp cumin",
+      "Pita bread",
+      "Tahini sauce",
+      "Tomatoes and cucumber",
+      "Pickled turnips"
+    ],
+    "steps": [
+      "Blend soaked chickpeas with onion, garlic, and herbs",
+      "Add cumin and season well",
+      "Form into small patties",
+      "Deep fry at 180°C until golden brown",
+      "Warm pita bread",
+      "Slice tomatoes and cucumber",
+      "Fill pita with falafel and vegetables",
+      "Drizzle generously with tahini"
+    ]
+  },
+  {
+    "name": "Pork Chops with Apple Sauce",
+    "teaser": "Pan-seared pork chops served with homemade cinnamon apple sauce",
+    "mealType": "Dinner",
+    "cuisine": "American",
+    "preparationTimeMinutes": 35,
+    "ingredients": [
+      "4 bone-in pork chops",
+      "4 apples",
+      "2 tbsp butter",
+      "2 tbsp brown sugar",
+      "1 tsp cinnamon",
+      "Fresh sage",
+      "Olive oil",
+      "Salt and pepper"
+    ],
+    "steps": [
+      "Peel and dice apples",
+      "Simmer apples with butter, sugar, and cinnamon until soft",
+      "Mash to desired consistency",
+      "Season pork chops generously",
+      "Sear in hot pan for 4-5 minutes per side",
+      "Add sage to pan and baste chops",
+      "Rest for 5 minutes",
+      "Serve with warm apple sauce"
+    ]
+  },
+  {
+    "name": "Granola Bars",
+    "teaser": "Chewy homemade bars with oats, honey, nuts, and dried fruit",
+    "mealType": "Snack",
+    "cuisine": "American",
+    "preparationTimeMinutes": 40,
+    "ingredients": [
+      "300g rolled oats",
+      "150g honey",
+      "100g almond butter",
+      "100g mixed nuts, chopped",
+      "100g dried cranberries",
+      "50g chocolate chips",
+      "1 tsp vanilla",
+      "Pinch of salt"
+    ],
+    "steps": [
+      "Preheat oven to 160°C",
+      "Toast oats for 10 minutes",
+      "Heat honey and almond butter until combined",
+      "Mix oats, nuts, cranberries, and chocolate",
+      "Pour honey mixture over and stir well",
+      "Press firmly into lined baking pan",
+      "Bake for 20 minutes until golden",
+      "Cool completely before cutting into bars"
+    ]
+  },
+  {
+    "name": "Clam Chowder",
+    "teaser": "Creamy New England soup with tender clams, potatoes, and bacon",
+    "mealType": "Lunch",
+    "cuisine": "American",
+    "preparationTimeMinutes": 45,
+    "ingredients": [
+      "500g clams, chopped",
+      "4 strips bacon",
+      "3 potatoes",
+      "2 celery stalks",
+      "1 onion",
+      "500ml clam juice",
+      "300ml heavy cream",
+      "Fresh thyme",
+      "Oyster crackers"
+    ],
+    "steps": [
+      "Cook bacon until crispy, crumble and set aside",
+      "Sauté onion and celery in bacon fat",
+      "Add diced potatoes and clam juice",
+      "Simmer until potatoes are tender",
+      "Add clams and cream",
+      "Cook for 5 more minutes",
+      "Season with thyme, salt, and pepper",
+      "Serve with bacon bits and oyster crackers"
+    ]
+  },
+  {
+    "name": "Chicken Parmesan",
+    "teaser": "Breaded chicken cutlets topped with marinara and melted mozzarella",
+    "mealType": "Dinner",
+    "cuisine": "Italian",
+    "preparationTimeMinutes": 40,
+    "ingredients": [
+      "4 chicken breasts, pounded thin",
+      "200g breadcrumbs",
+      "100g parmesan cheese",
+      "2 eggs",
+      "400ml marinara sauce",
+      "200g mozzarella",
+      "Fresh basil",
+      "Spaghetti for serving"
+    ],
+    "steps": [
+      "Mix breadcrumbs with grated parmesan",
+      "Dip chicken in beaten eggs, then breadcrumb mixture",
+      "Pan-fry chicken until golden on both sides",
+      "Place in baking dish",
+      "Top with marinara and mozzarella",
+      "Bake at 200°C for 15 minutes until cheese melts",
+      "Garnish with fresh basil",
+      "Serve over spaghetti"
+    ]
+  },
+  {
+    "name": "Chia Pudding",
+    "teaser": "Creamy overnight pudding with chia seeds and coconut milk",
+    "mealType": "Breakfast",
+    "cuisine": "American",
+    "preparationTimeMinutes": 10,
+    "ingredients": [
+      "60g chia seeds",
+      "400ml coconut milk",
+      "2 tbsp maple syrup",
+      "1 tsp vanilla extract",
+      "Fresh mango",
+      "Passion fruit",
+      "Toasted coconut flakes"
+    ],
+    "steps": [
+      "Whisk chia seeds with coconut milk",
+      "Add maple syrup and vanilla",
+      "Stir well to prevent clumps",
+      "Refrigerate overnight or at least 4 hours",
+      "Stir before serving",
+      "Top with diced mango",
+      "Add passion fruit pulp",
+      "Sprinkle with toasted coconut"
+    ]
+  }
+]
