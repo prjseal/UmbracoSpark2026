@@ -13,11 +13,6 @@ public sealed class SiteComposer : IComposer
             .AddSearchCore()
             // add the Examine search provider
             .AddExamineSearchProvider();
-
-        // force rebuild indexes after startup (awaiting a better solution from Core)
-        // builder.RebuildAllIndexesAfterStartup();
-
-        // TODO: split builder extensions into RegisterExampleOne(), RegisterExampleTwo(), ...
         
         builder
             .RegisterServices()
