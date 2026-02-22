@@ -1,4 +1,5 @@
-﻿using Umbraco.Cms.Core.Composing;
+﻿using Kjac.SearchProvider.Elasticsearch.DependencyInjection;
+using Umbraco.Cms.Core.Composing;
 using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
@@ -11,6 +12,8 @@ public sealed class SiteComposer : IComposer
         builder
             // add core services for search abstractions
             .AddSearchCore()
+            // use the Elasticsearch search provider
+            .AddElasticsearchSearchProvider()
             // add the Examine search provider
             .AddExamineSearchProvider();
         

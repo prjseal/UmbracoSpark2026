@@ -43,38 +43,6 @@ public static partial class UmbracoBuilderExtensions
                     Facetable = true,
                     Sortable = true
                 },
-                // TODO: clean this up when all member examples are moved to Elasticsearch
-                new ()
-                {
-                    PropertyName = SiteConstants.FieldNames.Zodiac,
-                    FieldValues = FieldValues.Keywords,
-                    Facetable = true
-                },
-                new ()
-                {
-                    PropertyName = SiteConstants.FieldNames.Genre,
-                    FieldValues = FieldValues.Keywords,
-                    Facetable = true
-                },
-                new ()
-                {
-                    PropertyName = SiteConstants.FieldNames.Personality,
-                    FieldValues = FieldValues.Keywords,
-                    Facetable = true
-                },
-                new ()
-                {
-                    PropertyName = SiteConstants.FieldNames.Birthdate,
-                    FieldValues = FieldValues.DateTimeOffsets,
-                    Facetable = true,
-                    Sortable = true
-                },
-                new ()
-                {
-                    PropertyName = SiteConstants.FieldNames.Name,
-                    FieldValues = FieldValues.Texts,
-                    Sortable = true
-                },
             ]
         );
 

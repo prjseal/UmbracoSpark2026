@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Kjac.SearchProvider.Elasticsearch.Services;
+using Microsoft.AspNetCore.Mvc;
 using Site.Models;
 using Site.Services;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
-using Umbraco.Cms.Search.Provider.Examine.Services;
 
 namespace Site.Controllers;
 
@@ -13,11 +13,10 @@ namespace Site.Controllers;
 [Route("api/[controller]")]
 public class PeopleSearchController : ControllerBase
 {
-    // TODO: use Elasticsearch instead
-    private readonly IExamineSearcher _searcher;
+    private readonly IElasticsearchSearcher _searcher;
     private readonly IPeopleService _peopleService;
 
-    public PeopleSearchController(IExamineSearcher searcher, IPeopleService peopleService)
+    public PeopleSearchController(IElasticsearchSearcher searcher, IPeopleService peopleService)
     {
         _searcher = searcher;
         _peopleService = peopleService;

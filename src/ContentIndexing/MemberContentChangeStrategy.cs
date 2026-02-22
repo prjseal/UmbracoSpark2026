@@ -4,16 +4,14 @@ using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Indexing;
+using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
-using Umbraco.Cms.Search.Provider.Examine.Services;
 
 namespace Site.ContentIndexing;
 
 public class MemberContentChangeStrategy : IMemberContentChangeStrategy
 {
     private readonly ISystemFieldsContentIndexer _systemFieldsContentIndexer;
-    // TODO: use Elasticsearch indexer instead
-    private readonly IExamineIndexer _indexer;
     private readonly IMemberService _memberService;
     private readonly IMemberToPersonService _memberToPersonService;
     private readonly ILogger<MemberContentChangeStrategy> _logger;
@@ -24,7 +22,6 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
         // TODO: inject this explicitly once Search has an explicit registration for ISystemFieldsContentIndexer
         //ISystemFieldsContentIndexer systemFieldsContentIndexer,
         IEnumerable<IContentIndexer> contentIndexers,
-        IExamineIndexer indexer,
         IMemberService memberService,
         IMemberToPersonService memberToPersonService,
         ILogger<MemberContentChangeStrategy> logger
@@ -34,7 +31,6 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
         // _systemFieldsContentIndexer = systemFieldsContentIndexer;
         // TODO: remove this when ISystemFieldsContentIndexer can be injected
         _systemFieldsContentIndexer = contentIndexers.OfType<ISystemFieldsContentIndexer>().Single();
-        _indexer = indexer;
         _memberService = memberService;
         _logger = logger;
         _memberToPersonService = memberToPersonService;
@@ -42,6 +38,12 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
     {
+        var indexInfo = indexInfos.FirstOrDefault();
+        if (indexInfo?.IndexAlias != IndexAlias)
+        {
+            return;
+        }
+
         // get the relevant changes for this change strategy
         var changesAsArray = changes.Where(change =>
                 change.ContentState is ContentState.Draft
@@ -58,7 +60,7 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
             .Where(change => change.ChangeImpact is ChangeImpact.Remove)
             .Select(change => change.Id)
             .ToArray();
-        await _indexer.DeleteAsync(IndexAlias, idsToRemove);
+        await indexInfo.Indexer.DeleteAsync(IndexAlias, idsToRemove);
 
         // now handle all updates
         var idsToUpdate = changesAsArray
@@ -82,7 +84,7 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
 
             if (member.IsApproved)
             {
-                await UpdateIndexAsync(member, cancellationToken);
+                await UpdateIndexAsync(member, indexInfo.Indexer, cancellationToken);
             }
             else
             {
@@ -91,7 +93,7 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
             }
         }
 
-        await _indexer.DeleteAsync(IndexAlias, unApprovedMemberIds);
+        await indexInfo.Indexer.DeleteAsync(IndexAlias, unApprovedMemberIds);
     }
 
     public async Task RebuildAsync(IndexInfo indexInfo, CancellationToken cancellationToken)
@@ -123,7 +125,7 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
                     break;
                 }
 
-                await UpdateIndexAsync(member, cancellationToken);
+                await UpdateIndexAsync(member, indexInfo.Indexer, cancellationToken);
             }
 
             pageIndex++;
@@ -136,7 +138,7 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
         }
     }
 
-    private async Task UpdateIndexAsync(IMember member, CancellationToken cancellationToken)
+    private async Task UpdateIndexAsync(IMember member, IIndexer indexer, CancellationToken cancellationToken)
     {
         var fields = (await _systemFieldsContentIndexer.GetIndexFieldsAsync(member, [], false, cancellationToken)).ToList();
         if (fields.Any() is false)
@@ -172,7 +174,7 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
         
         fields.AddRange(person.AsIndexFields());
 
-        await _indexer.AddOrUpdateAsync(
+        await indexer.AddOrUpdateAsync(
             IndexAlias,
             member.Key,
             UmbracoObjectTypes.Member,

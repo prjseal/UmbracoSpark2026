@@ -1,18 +1,17 @@
-﻿using Site.Extensions;
+﻿using Kjac.SearchProvider.Elasticsearch.Services;
+using Site.Extensions;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
-using Umbraco.Cms.Search.Provider.Examine.Services;
 
 namespace Site.Services;
 
 public class PeopleIndexingService : IPeopleIndexingService
 {
-    // TODO: use Elasticsearch indexer instead
-    private readonly IExamineIndexer _indexer;
+    private readonly IElasticsearchIndexer _indexer;
     private readonly IPeopleService _peopleService;
     private readonly ILogger<PeopleIndexingService> _logger;
 
-    public PeopleIndexingService(IExamineIndexer indexer, IPeopleService peopleService, ILogger<PeopleIndexingService> logger)
+    public PeopleIndexingService(IElasticsearchIndexer indexer, IPeopleService peopleService, ILogger<PeopleIndexingService> logger)
     {
         _indexer = indexer;
         _peopleService = peopleService;
