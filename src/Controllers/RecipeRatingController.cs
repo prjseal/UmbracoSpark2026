@@ -36,10 +36,6 @@ public class RecipeRatingController : ControllerBase
 
         // update the recipe rating
         _recipeRatingService.Set(id, rating);
-
-        // TODO: CLEAN UP
-        // // explicitly clear the cached content values to trigger a complete rebuild of index values
-        // await _indexDocumentService.DeleteAsync([id], true);
         
         // trigger a reindex of the recipe to update the rating
         // NOTE: this should really be handled with a timed delay on a background thread, to handle multiple ratings
