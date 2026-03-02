@@ -11,17 +11,18 @@ namespace Site.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PeopleSearchController : ControllerBase
+public class PersonSearchController : ControllerBase
 {
     private readonly IElasticsearchSearcher _searcher;
-    private readonly IPeopleService _peopleService;
+    private readonly IPersonService _personService;
 
-    public PeopleSearchController(IElasticsearchSearcher searcher, IPeopleService peopleService)
+    public PersonSearchController(IElasticsearchSearcher searcher, IPersonService personService)
     {
         _searcher = searcher;
-        _peopleService = peopleService;
+        _personService = personService;
     }
 
+    // these are the ranges used for generation filtering and faceting
     private static readonly (string Label, DateTimeOffset From, DateTimeOffset To)[] GenerationRanges =
     [
         (
@@ -67,6 +68,7 @@ public class PeopleSearchController : ControllerBase
         string? sortBy = null,
         string? sortDirection = null)
     {
+        // calculate the filters for the active search
         var filters = new List<Filter>();
 
         if (zodiac is { Length: > 0 })
@@ -89,6 +91,19 @@ public class PeopleSearchController : ControllerBase
             filters.Add(new DateTimeOffsetRangeFilter(SiteConstants.FieldNames.Birthdate, ranges, false));
         }
 
+        // calculate the sorting for the active search
+        var direction = sortDirection?.ToLowerInvariant() == "asc"
+            ? Direction.Ascending
+            : Direction.Descending;
+
+        Sorter sorter = sortBy?.ToLowerInvariant() switch
+        {
+            "birthdate" => new DateTimeOffsetSorter(SiteConstants.FieldNames.Birthdate, direction),
+            "name" => new TextSorter(SiteConstants.FieldNames.Name, direction),
+            _ => new ScoreSorter(direction)
+        };
+
+        // define the list of facets to include in the search result
         var facets = new List<Facet>
         {
             new KeywordFacet(SiteConstants.FieldNames.Zodiac),
@@ -101,19 +116,9 @@ public class PeopleSearchController : ControllerBase
             )
         };
         
-        var direction = sortDirection?.ToLowerInvariant() == "asc"
-            ? Direction.Ascending
-            : Direction.Descending;
-
-        Sorter sorter = sortBy?.ToLowerInvariant() switch
-        {
-            "birthdate" => new DateTimeOffsetSorter(SiteConstants.FieldNames.Birthdate, direction),
-            "name" => new TextSorter(SiteConstants.FieldNames.Name, direction),
-            _ => new ScoreSorter(direction)
-        };
-
+        // search!
         var result = await _searcher.SearchAsync(
-            indexAlias: SiteConstants.IndexAliases.CustomPeopleIndex,
+            indexAlias: SiteConstants.IndexAliases.CustomPersonIndex,
             query: query,
             filters: filters,
             facets: facets,
@@ -121,10 +126,13 @@ public class PeopleSearchController : ControllerBase
             skip: skip,
             take: take);
 
-        var people = await _peopleService.GetByIdsAsync(result.Documents.Select(d => d.Id).ToArray());
-        // TODO: sort the people collection by the order in the search results
+        // fetch the resulting people from the person service
+        var resultKeys = result.Documents.Select(d => d.Id).ToArray();
+        var people = await _personService.GetByIdsAsync(resultKeys);
 
+        // create search result view models 
         var personSearchResultItemModels = people
+            .OrderBy(person => resultKeys.IndexOf(person.Id))
             .Select(person =>
             {
                 var generationLabel = GenerationRanges.Single(r => person.Birthdate >= r.From && person.Birthdate < r.To).Label;
@@ -138,25 +146,28 @@ public class PeopleSearchController : ControllerBase
                     Generation = generationLabel
                 };
             });
-    
+
+        // create facet result view models
+        var facetResultModels = result.Facets.Select(f => new FacetResultModel
+        {
+            FieldName = f.FieldName is SiteConstants.FieldNames.Birthdate ? "generation" : f.FieldName,
+            Values = f.Values
+                .Select(v => v switch
+                {
+                    KeywordFacetValue kv => new FacetValueModel { Key = kv.Key, Count = kv.Count },
+                    DateTimeOffsetRangeFacetValue rv => new FacetValueModel { Key = rv.Key, Count = rv.Count },
+                    _ => null
+                })
+                .WhereNotNull()
+                .Where(v => v.Count > 0)
+        });
+
         return Ok(
             new PersonSearchResponseModel
             {
                 Total = result.Total,
                 Items = personSearchResultItemModels,
-                Facets = result.Facets.Select(f => new FacetResultModel
-                {
-                    FieldName = f.FieldName is SiteConstants.FieldNames.Birthdate ? "generation" : f.FieldName,
-                    Values = f.Values
-                        .Select(v => v switch
-                        {
-                            KeywordFacetValue kv => new FacetValueModel { Key = kv.Key, Count = kv.Count },
-                            DateTimeOffsetRangeFacetValue rv => new FacetValueModel { Key = rv.Key, Count = rv.Count },
-                            _ => null
-                        })
-                        .WhereNotNull()
-                        .Where(v => v.Count > 0)
-                })
+                Facets = facetResultModels
             }
         );
     }

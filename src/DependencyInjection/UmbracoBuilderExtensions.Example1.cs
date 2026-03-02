@@ -1,16 +1,54 @@
-﻿using Site.ContentIndexing;
+﻿using Kjac.SearchProvider.Elasticsearch.DependencyInjection;
+using Kjac.SearchProvider.Elasticsearch.Services;
 using Site.NotificationHandlers;
 using Site.Services;
-using Umbraco.Cms.Core.Notifications;
+using Umbraco.Cms.Core.Models;
+using Umbraco.Cms.Search.Core.Configuration;
+using Umbraco.Cms.Search.Core.DependencyInjection;
 using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
+using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
 
 namespace Site.DependencyInjection;
 
 public static partial class UmbracoBuilderExtensions
 {
-    public static IUmbracoBuilder ConfigureExamineSearchProvider(this IUmbracoBuilder builder)
+    public static IUmbracoBuilder ConfigureExampleOne(this IUmbracoBuilder builder)
+    {
+        builder
+            // add the Umbraco Search core services
+            .AddSearchCore()
+            // use the Elasticsearch search provider
+            .AddElasticsearchSearchProvider()
+            // add the Examine search provider
+            .AddExamineSearchProvider();
+
+        // configure the Examine search options
+        builder.ConfigureExamineSearchProvider();
+
+        // register a custom published content index with the Elasticsearch provider
+        builder.Services.Configure<IndexOptions>(options =>
+            options.RegisterIndex<IElasticsearchIndexer, IElasticsearchSearcher, IPublishedContentChangeStrategy>
+            (
+                SiteConstants.IndexAliases.CustomIndexElasticsearch,
+                UmbracoObjectTypes.Document
+            )
+        );
+
+        // add the required services for example one
+        builder.Services
+            .AddSingleton<IRecipeRatingService, RecipeRatingService>();
+
+        // add notification handlers for custom indexing
+        builder
+            .AddNotificationHandler<IndexingNotification, AddSearchProviderNameIndexingNotificationHandler>()
+            .AddNotificationAsyncHandler<IndexingNotification, RecipeRatingIndexingNotificationHandler>();
+
+        return builder;
+    }
+
+    private static void ConfigureExamineSearchProvider(this IUmbracoBuilder builder)
     {
         // by default, Examine (Lucene) filters out facet values that are not active (picked) within a facet group,
         // if any facet value is active within that facet group.
@@ -50,24 +88,5 @@ public static partial class UmbracoBuilderExtensions
                 },
             ]
         );
-
-        return builder;
-    }
-
-    public static IUmbracoBuilder RegisterServices(this IUmbracoBuilder builder)
-    {
-        builder.Services
-            .AddTransient<IContentIndexer, MemberAsPersonContentIndexer>()
-            .AddTransient<IMemberContentChangeStrategy, MemberContentChangeStrategy>()
-            .AddSingleton<IPeopleService, PeopleService>()
-            .AddSingleton<IMemberToPersonService, MemberToPersonService>()
-            .AddSingleton<IPeopleIndexingService, PeopleIndexingService>()
-            .AddSingleton<IRecipeRatingService, RecipeRatingService>();
-
-        builder
-            .AddNotificationAsyncHandler<IndexingNotification, RecipeRatingIndexingNotificationHandler>()
-            .AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, UmbracoApplicationStartedNotificationHandler>();
-
-        return builder;
     }
 }

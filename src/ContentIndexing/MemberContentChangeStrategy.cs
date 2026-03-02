@@ -1,39 +1,34 @@
-﻿using Site.Extensions;
-using Site.Services;
-using Umbraco.Cms.Core;
+﻿using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Core.Services;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Services;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
+using SearchConstants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Site.ContentIndexing;
 
 public class MemberContentChangeStrategy : IMemberContentChangeStrategy
 {
     private readonly ISystemFieldsContentIndexer _systemFieldsContentIndexer;
+    private readonly PersonContentIndexer _personContentIndexer;
     private readonly IMemberService _memberService;
-    private readonly IMemberToPersonService _memberToPersonService;
     private readonly ILogger<MemberContentChangeStrategy> _logger;
 
-    private string IndexAlias => SiteConstants.IndexAliases.CustomMemberIndex;
+    private string IndexAlias => SearchConstants.IndexAliases.DraftMembers;
     
     public MemberContentChangeStrategy(
-        // TODO: inject this explicitly once Search has an explicit registration for ISystemFieldsContentIndexer
-        //ISystemFieldsContentIndexer systemFieldsContentIndexer,
         IEnumerable<IContentIndexer> contentIndexers,
         IMemberService memberService,
-        IMemberToPersonService memberToPersonService,
         ILogger<MemberContentChangeStrategy> logger
     )
     {
-        // TODO: add this when ISystemFieldsContentIndexer can be injected
-        // _systemFieldsContentIndexer = systemFieldsContentIndexer;
-        // TODO: remove this when ISystemFieldsContentIndexer can be injected
-        _systemFieldsContentIndexer = contentIndexers.OfType<ISystemFieldsContentIndexer>().Single();
+        var contentIndexersAsArray = contentIndexers as IContentIndexer[] ?? contentIndexers.ToArray();
+
+        _systemFieldsContentIndexer = contentIndexersAsArray.OfType<ISystemFieldsContentIndexer>().Single();
+        _personContentIndexer = contentIndexersAsArray.OfType<PersonContentIndexer>().Single();
         _memberService = memberService;
         _logger = logger;
-        _memberToPersonService = memberToPersonService;
     }
 
     public async Task HandleAsync(IEnumerable<IndexInfo> indexInfos, IEnumerable<ContentChange> changes, CancellationToken cancellationToken)
@@ -45,9 +40,8 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
         }
 
         // get the relevant changes for this change strategy
-        var changesAsArray = changes.Where(change =>
-                change.ContentState is ContentState.Draft
-                && change.ObjectType is UmbracoObjectTypes.Member)
+        var changesAsArray = changes
+            .Where(change => change.ObjectType is UmbracoObjectTypes.Member)
             .ToArray();
 
         if (changesAsArray.Length is 0)
@@ -88,11 +82,11 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
             }
             else
             {
-                // if the member is not approved, make sure it's removed from the index
                 unApprovedMemberIds.Add(member.Key);
             }
         }
 
+        // remove any unapproved members (if they are still in the index)
         await indexInfo.Indexer.DeleteAsync(IndexAlias, unApprovedMemberIds);
     }
 
@@ -164,15 +158,9 @@ public class MemberContentChangeStrategy : IMemberContentChangeStrategy
             );
         }
 
-        // append the "Person" fields from the people service
-        var person = await _memberToPersonService.GetPersonForMemberAsync(member);
-        if (person is null)
-        {
-            _logger.LogWarning("No Person were found for member with ID: {id}", member.Key);
-            return;
-        }
-        
-        fields.AddRange(person.AsIndexFields());
+        // append the "Person" fields from the person service (via the person content indexer)
+        var personFields = await _personContentIndexer.GetIndexFieldsAsync(member, [], false, cancellationToken);
+        fields.AddRange(personFields);
 
         await indexer.AddOrUpdateAsync(
             IndexAlias,

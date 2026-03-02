@@ -6,11 +6,11 @@ using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 
 namespace Site.ContentIndexing;
 
-public class MemberAsPersonContentIndexer : IContentIndexer
+public class PersonContentIndexer : IContentIndexer
 {
     private readonly IMemberToPersonService _memberToPersonService;
 
-    public MemberAsPersonContentIndexer(IMemberToPersonService memberToPersonService)
+    public PersonContentIndexer(IMemberToPersonService memberToPersonService)
         => _memberToPersonService = memberToPersonService;
 
 
@@ -21,7 +21,10 @@ public class MemberAsPersonContentIndexer : IContentIndexer
             return [];
         }
 
+        // get the corresponding person from the person service
         var person = await _memberToPersonService.GetPersonForMemberAsync(member);
+
+        // return the index fields for the person
         return person?.AsIndexFields() ?? [];
     }
 }

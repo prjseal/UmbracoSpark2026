@@ -2,7 +2,7 @@
 
 namespace Site.Services;
 
-public class PeopleService : IPeopleService
+public class PersonService : IPersonService
 {
     private readonly List<Person> _people = new();
 

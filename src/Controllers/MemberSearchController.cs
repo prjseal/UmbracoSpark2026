@@ -1,13 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Kjac.SearchProvider.Elasticsearch.Services;
+using Microsoft.AspNetCore.Mvc;
 using Site.Models;
 using Site.Services;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Services;
-using Umbraco.Cms.Search.Core.Extensions;
 using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
 using Umbraco.Cms.Search.Core.Models.Searching.Filtering;
 using Umbraco.Cms.Search.Core.Models.Searching.Sorting;
-using Umbraco.Cms.Search.Core.Services;
 using SearchConstants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Site.Controllers;
@@ -16,17 +15,18 @@ namespace Site.Controllers;
 [Route("api/[controller]")]
 public class MemberSearchController : ControllerBase
 {
-    private readonly ISearcherResolver _searcherResolver;
+    private readonly IElasticsearchSearcher _searcher;
     private readonly IMemberService _memberService;
     private readonly IMemberToPersonService _memberToPersonService;
 
-    public MemberSearchController(ISearcherResolver searcherResolver, IMemberService memberService, IMemberToPersonService memberToPersonService)
+    public MemberSearchController(IElasticsearchSearcher searcher, IMemberService memberService, IMemberToPersonService memberToPersonService)
     {
-        _searcherResolver = searcherResolver;
+        _searcher = searcher;
         _memberService = memberService;
         _memberToPersonService = memberToPersonService;
     }
 
+    // these are the ranges used for generation filtering and faceting
     private static readonly (string Label, DateTimeOffset From, DateTimeOffset To)[] GenerationRanges =
     [
         (
@@ -71,9 +71,9 @@ public class MemberSearchController : ControllerBase
         [FromQuery] string[]? personality = null,
         [FromQuery] string[]? generation = null,
         string? sortBy = null,
-        string? sortDirection = null,
-        string provider = "default")
+        string? sortDirection = null)
     {
+        // calculate the filters for the active search
         var filters = new List<Filter>();
 
         if (zodiac is { Length: > 0 })
@@ -101,6 +101,19 @@ public class MemberSearchController : ControllerBase
             filters.Add(new DateTimeOffsetRangeFilter(SiteConstants.FieldNames.Birthdate, ranges, false));
         }
 
+        // calculate the sorting for the active search
+        var direction = sortDirection?.ToLowerInvariant() == "asc"
+            ? Direction.Ascending
+            : Direction.Descending;
+
+        Sorter sorter = sortBy?.ToLowerInvariant() switch
+        {
+            "birthdate" => new DateTimeOffsetSorter(SiteConstants.FieldNames.Birthdate, direction),
+            "name" => new TextSorter(SiteConstants.FieldNames.Name, direction),
+            _ => new ScoreSorter(direction)
+        };
+
+        // define the list of facets to include in the search result
         var facets = new List<Facet>
         {
             new KeywordFacet(SiteConstants.FieldNames.Zodiac),
@@ -113,35 +126,19 @@ public class MemberSearchController : ControllerBase
                     .ToArray()
             )
         };
-        
-        var direction = sortDirection?.ToLowerInvariant() == "asc"
-            ? Direction.Ascending
-            : Direction.Descending;
 
-        Sorter sorter = sortBy?.ToLowerInvariant() switch
-        {
-            "birthdate" => new DateTimeOffsetSorter(SiteConstants.FieldNames.Birthdate, direction),
-            "name" => new TextSorter(SiteConstants.FieldNames.Name, direction),
-            _ => new ScoreSorter(direction)
-        };
-
-        var indexAlias = provider == "custom"
-            ? SiteConstants.IndexAliases.CustomMemberIndex
-            : SearchConstants.IndexAliases.DraftMembers;
-        var searcher = _searcherResolver.GetRequiredSearcher(indexAlias);
-
-        var result = await searcher.SearchAsync(
-            indexAlias: indexAlias,
+        // search!
+        var result = await _searcher.SearchAsync(
+            indexAlias: SearchConstants.IndexAliases.DraftMembers,
             query: query,
             filters: filters,
             facets: facets,
             sorters: [sorter],
             skip: skip,
             take: take);
-        
-        // TODO: is there a better/faster way to get members? looks like GetByKeysAsync() is explicitly uncached
 
-        var memberSearchResultItemModels = new  List<MemberSearchResultItemModel>();
+        // create search result view models 
+        var memberSearchResultItemModels = new List<MemberSearchResultItemModel>();
         foreach (var id in result.Documents.Select(d => d.Id))
         {
             var member = _memberService.GetById(id);
@@ -172,24 +169,27 @@ public class MemberSearchController : ControllerBase
             );
         }
 
+        // create facet result view models
+        var facetResultModels = result.Facets.Select(f => new FacetResultModel
+        {
+            FieldName = f.FieldName is SiteConstants.FieldNames.Birthdate ? "generation" : f.FieldName,
+            Values = f.Values
+                .Select(v => v switch
+                {
+                    KeywordFacetValue kv => new FacetValueModel { Key = kv.Key, Count = kv.Count },
+                    DateTimeOffsetRangeFacetValue rv => new FacetValueModel { Key = rv.Key, Count = rv.Count },
+                    _ => null
+                })
+                .WhereNotNull()
+                .Where(v => v.Count > 0)
+        });
+
         return Ok(
             new MemberSearchResponseModel
             {
                 Total = result.Total,
                 Items = memberSearchResultItemModels,
-                Facets = result.Facets.Select(f => new FacetResultModel
-                {
-                    FieldName = f.FieldName is SiteConstants.FieldNames.Birthdate ? "generation" : f.FieldName,
-                    Values = f.Values
-                        .Select(v => v switch
-                        {
-                            KeywordFacetValue kv => new FacetValueModel { Key = kv.Key, Count = kv.Count },
-                            DateTimeOffsetRangeFacetValue rv => new FacetValueModel { Key = rv.Key, Count = rv.Count },
-                            _ => null
-                        })
-                        .WhereNotNull()
-                        .Where(v => v.Count > 0)
-                })
+                Facets = facetResultModels
             }
         );
     }

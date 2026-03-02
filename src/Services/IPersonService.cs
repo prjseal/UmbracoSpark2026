@@ -2,7 +2,7 @@
 
 namespace Site.Services;
 
-public interface IPeopleService
+public interface IPersonService
 {
     void Seed(IEnumerable<Person> people);
 

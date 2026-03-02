@@ -249,13 +249,6 @@
                         <option value="asc">Ascending</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="provider">Index</label>
-                    <select id="provider">
-                        <option value="default">Default</option>
-                        <option value="custom">Custom</option>
-                    </select>
-                </div>
                 <button type="submit" class="search-btn">Search</button>
             </form>
         </div>
@@ -290,7 +283,6 @@
                 },
                 sortBy: '',
                 sortDirection: 'desc',
-                provider: 'default',
                 total: 0,
                 facets: []
             };
@@ -300,7 +292,6 @@
                 searchQuery: document.getElementById('searchQuery'),
                 sortBy: document.getElementById('sortBy'),
                 sortDirection: document.getElementById('sortDirection'),
-                provider: document.getElementById('provider'),
                 facetsContainer: document.getElementById('facetsContainer'),
                 resultsContainer: document.getElementById('resultsContainer'),
                 resultsCount: document.getElementById('resultsCount'),
@@ -326,7 +317,6 @@
                     params.append('sortBy', state.sortBy);
                 }
                 params.append('sortDirection', state.sortDirection);
-                params.append('provider', state.provider);
 
                 return '/api/membersearch?' + params.toString();
             }
@@ -544,7 +534,6 @@
                 state.query = elements.searchQuery.value;
                 state.sortBy = elements.sortBy.value;
                 state.sortDirection = elements.sortDirection.value;
-                state.provider = elements.provider.value;
                 state.skip = 0;
                 performSearch();
             });
@@ -557,13 +546,6 @@
 
             elements.sortDirection.addEventListener('change', function() {
                 state.sortDirection = this.value;
-                state.skip = 0;
-                performSearch();
-            });
-
-            elements.provider.addEventListener('change', function() {
-                state.provider = this.value;
-                resetFilters();
                 state.skip = 0;
                 performSearch();
             });

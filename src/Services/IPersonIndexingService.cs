@@ -1,6 +1,6 @@
 ﻿namespace Site.Services;
 
-public interface IPeopleIndexingService
+public interface IPersonIndexingService
 {
     Task RebuildIndexAsync();
 }
