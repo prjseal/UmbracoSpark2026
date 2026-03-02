@@ -1,4 +1,4 @@
-﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 @{
     Layout = null;
 }
@@ -221,6 +221,34 @@
         .clear-filters:hover {
             text-decoration: underline;
         }
+
+        input[type="range"] {
+            width: 100px;
+            --s: 20px; /* control the size*/
+
+            --c: #7b7b7b 50%,#fbc02d 0;
+            height: var(--s);
+            aspect-ratio: attr(max type(<integer>));
+            padding-inline: calc(var(--s)/20);
+            box-sizing: border-box;
+            mask:
+                url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 5 L79 95 L2 40 L98 40 L21 95 Z'/></svg>") 0/var(--s) var(--_m,);
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb{
+            width: 1px;
+            border-image:
+            conic-gradient(at calc(50% + var(--s)/20),var(--c))
+            fill 0//var(--s) calc(20*var(--s));
+            appearance: none;
+        }
+
+        input[type="range"]:disabled{
+            cursor: default;
+            --c: #7b7b7b 50%,#7cb342 0;
+        }
     </style>
 </head>
 <body>
@@ -240,6 +268,7 @@
                         <option value="name">Name</option>
                         <option value="cuisine">Cuisine</option>
                         <option value="preparationTime">Preparation time</option>
+                        <option value="rating">Rating</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -363,7 +392,12 @@
                 elements.resultsContainer.innerHTML = items.map(item => {
                     return `
                         <article class="item-card">
-                            <h3><a href="${escapeHtml(item.url)}">${escapeHtml(item.name)}</a></h3>
+                            <h3 style="display:flex;">
+                                <a href="${escapeHtml(item.url)}">${escapeHtml(item.name)}</a>
+                                <span style="margin-left:10px;">
+                                    <input type="range" min=".1" step=".1" max="5" value="${item.rating}" data-id="${item.id}">
+                                </span>
+                            </h3>
                             <div class="item-meta">
                                 ${item.mealType ? `<span><strong>Meal type:</strong> ${item.mealType}</span>` : ''}
                                 ${item.cuisine ? `<span><strong>Cuisine:</strong> ${item.cuisine}</span>` : ''}
@@ -373,6 +407,10 @@
                         </article>
                     `;
                 }).join('');
+
+                elements.resultsContainer.querySelectorAll('input[type="range"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', handleRatingChange);
+                });
             }
 
             function renderFacets(facets) {
@@ -535,6 +573,17 @@
                 const div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
+            }
+
+            async function handleRatingChange(e) {
+                const id = e.target.dataset.id;
+                const value = e.target.value;
+                console.log("Rating change", id, value)
+                e.target.disabled = true;
+                const response = await fetch(`/api/reciperating/${id}?rating=${value}`, { method: 'POST' });
+                if (!response.ok) {
+                    throw new Error('Rating request failed');
+                }
             }
 
             elements.searchForm.addEventListener('submit', function(e) {

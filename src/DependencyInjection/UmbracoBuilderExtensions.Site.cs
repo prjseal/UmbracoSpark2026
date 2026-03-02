@@ -1,10 +1,8 @@
-﻿using System.Text.Json.Serialization.Metadata;
-using Site.ContentIndexing;
+﻿using Site.ContentIndexing;
 using Site.NotificationHandlers;
 using Site.Services;
-using Umbraco.Cms.Core.Mapping;
 using Umbraco.Cms.Core.Notifications;
-using Umbraco.Cms.Search.Core.Models.Searching.Faceting;
+using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 
@@ -43,6 +41,13 @@ public static partial class UmbracoBuilderExtensions
                     Facetable = true,
                     Sortable = true
                 },
+                new ()
+                {
+                    PropertyName = "rating",
+                    FieldValues = FieldValues.Decimals,
+                    Facetable = false,
+                    Sortable = true
+                },
             ]
         );
 
@@ -56,9 +61,12 @@ public static partial class UmbracoBuilderExtensions
             .AddTransient<IMemberContentChangeStrategy, MemberContentChangeStrategy>()
             .AddSingleton<IPeopleService, PeopleService>()
             .AddSingleton<IMemberToPersonService, MemberToPersonService>()
-            .AddSingleton<IPeopleIndexingService, PeopleIndexingService>();
+            .AddSingleton<IPeopleIndexingService, PeopleIndexingService>()
+            .AddSingleton<IRecipeRatingService, RecipeRatingService>();
 
-        builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, UmbracoApplicationStartedNotificationHandler>();
+        builder
+            .AddNotificationAsyncHandler<IndexingNotification, RecipeRatingIndexingNotificationHandler>()
+            .AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, UmbracoApplicationStartedNotificationHandler>();
 
         return builder;
     }

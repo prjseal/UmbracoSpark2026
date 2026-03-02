@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Site.Models;
+using Site.Services;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.DeliveryApi;
 using Umbraco.Cms.Search.Core.Extensions;
@@ -17,11 +18,16 @@ public class RecipeSearchController : ControllerBase
 {
     private readonly ISearcherResolver _searcherResolver;
     private readonly IApiPublishedContentCache _publishedContentCache;
+    private readonly IRecipeRatingService _recipeRatingService;
 
-    public RecipeSearchController(ISearcherResolver searcherResolver, IApiPublishedContentCache publishedContentCache)
+    public RecipeSearchController(
+        ISearcherResolver searcherResolver,
+        IApiPublishedContentCache publishedContentCache,
+        IRecipeRatingService recipeRatingService)
     {
         _searcherResolver = searcherResolver;
         _publishedContentCache = publishedContentCache;
+        _recipeRatingService = recipeRatingService;
     }
 
     private static readonly (string Label, int From, int To)[] PreparationTimeRanges =
@@ -91,6 +97,7 @@ public class RecipeSearchController : ControllerBase
             "preparationTime" => new IntegerSorter("preparationTime", direction),
             "cuisine" => new KeywordSorter("cuisine", direction),
             "name" => new TextSorter(SearchConstants.FieldNames.Name, direction),
+            "rating" => new DecimalSorter("rating", direction),
             _ => new ScoreSorter(direction)
         };
 
@@ -121,12 +128,14 @@ public class RecipeSearchController : ControllerBase
                 Total = result.Total,
                 Items = publishedContent.Select(c => new ContentSearchResultItemModel
                 {
+                    Id = c.Key,
                     Name = c.Name,
                     Url = c.Url(),
                     Teaser = c.Value<string>("teaser"),
                     Cuisine = c.Value<IEnumerable<string>>("cuisine"),
                     MealType = c.Value<IEnumerable<string>>("mealType"),
-                    PreparationTime = c.Value<int?>("preparationTime")
+                    PreparationTime = c.Value<int?>("preparationTime"),
+                    Rating = _recipeRatingService.Get(c.Key)
                 }),
                 Facets = result.Facets.Select(f => new FacetResultModel
                 {
