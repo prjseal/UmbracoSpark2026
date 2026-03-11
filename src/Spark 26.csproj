@@ -11,9 +11,9 @@
     <PackageReference Include="Kjac.SearchProvider.Elasticsearch" Version="1.0.0-alpha.4" />
     <PackageReference Include="Umbraco.Cms" Version="17.2.0" />
     <PackageReference Include="Umbraco.Cms.DevelopmentMode.Backoffice" Version="17.2.0" />
-    <PackageReference Include="Umbraco.Cms.Search.BackOffice" Version="1.0.0-beta.1" />
-    <PackageReference Include="Umbraco.Cms.Search.Core" Version="1.0.0-beta.1" />
-    <PackageReference Include="Umbraco.Cms.Search.Provider.Examine" Version="1.0.0-beta.1" />
+    <PackageReference Include="Umbraco.Cms.Search.BackOffice" Version="1.0.0-beta.2" />
+    <PackageReference Include="Umbraco.Cms.Search.Core" Version="1.0.0-beta.2" />
+    <PackageReference Include="Umbraco.Cms.Search.Provider.Examine" Version="1.0.0-beta.2" />
   </ItemGroup>
 
   <ItemGroup>
