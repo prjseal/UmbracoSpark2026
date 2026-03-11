@@ -1,13 +1,13 @@
 ﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 @{
-    Layout = null;
+Layout = null;
 }
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Member Search</title>
+    <title>People Search</title>
     <style>
         * {
             box-sizing: border-box;
@@ -225,133 +225,131 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Member Search</h1>
+<div class="container">
+    <h1>People Search</h1>
 
-        <div class="search-section">
-            <form class="search-form" id="searchForm">
-                <div class="form-group">
-                    <label for="searchQuery">Search</label>
-                    <input type="text" id="searchQuery" class="search-input" placeholder="Search for members...">
-                </div>
-                <div class="form-group">
-                    <label for="sortBy">Sort by</label>
-                    <select id="sortBy">
-                        <option value="">Relevance</option>
-                        <option value="name">Name</option>
-                        <option value="birthdate">Birthdate</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="sortDirection">Direction</label>
-                    <select id="sortDirection">
-                        <option value="desc">Descending</option>
-                        <option value="asc">Ascending</option>
-                    </select>
-                </div>
-                <button type="submit" class="search-btn">Search</button>
-            </form>
-        </div>
-
-        <div class="main-content">
-            <aside class="filters-panel">
-                <h3>Filters <button class="clear-filters" id="clearFilters">Clear all</button></h3>
-                <div id="facetsContainer"></div>
-            </aside>
-
-            <main class="results-panel">
-                <div class="results-header">
-                    <span class="results-count" id="resultsCount"></span>
-                </div>
-                <div id="resultsContainer" class="item-list"></div>
-                <div id="paginationContainer" class="pagination"></div>
-            </main>
-        </div>
+    <div class="search-section">
+        <form class="search-form" id="searchForm">
+            <div class="form-group">
+                <label for="searchQuery">Search</label>
+                <input type="text" id="searchQuery" class="search-input" placeholder="Search for people...">
+            </div>
+            <div class="form-group">
+                <label for="sortBy">Sort by</label>
+                <select id="sortBy">
+                    <option value="">Relevance</option>
+                    <option value="name">Name</option>
+                    <option value="birthdate">Birthdate</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="sortDirection">Direction</label>
+                <select id="sortDirection">
+                    <option value="desc">Descending</option>
+                    <option value="asc">Ascending</option>
+                </select>
+            </div>
+            <button type="submit" class="search-btn">Search</button>
+        </form>
     </div>
 
-    <script>
-        (function() {
-            const state = {
-                query: '',
-                skip: 0,
-                take: 10,
-                filters: {
-                    zodiac: [],
-                    genre: [],
-                    personality: [],
-                    generation: []
-                },
-                sortBy: '',
-                sortDirection: 'desc',
-                total: 0,
-                facets: []
-            };
+    <div class="main-content">
+        <aside class="filters-panel">
+            <h3>Filters <button class="clear-filters" id="clearFilters">Clear all</button></h3>
+            <div id="facetsContainer"></div>
+        </aside>
 
-            const elements = {
-                searchForm: document.getElementById('searchForm'),
-                searchQuery: document.getElementById('searchQuery'),
-                sortBy: document.getElementById('sortBy'),
-                sortDirection: document.getElementById('sortDirection'),
-                facetsContainer: document.getElementById('facetsContainer'),
-                resultsContainer: document.getElementById('resultsContainer'),
-                resultsCount: document.getElementById('resultsCount'),
-                paginationContainer: document.getElementById('paginationContainer'),
-                clearFilters: document.getElementById('clearFilters')
-            };
+        <main class="results-panel">
+            <div class="results-header">
+                <span class="results-count" id="resultsCount"></span>
+            </div>
+            <div id="resultsContainer" class="item-list"></div>
+            <div id="paginationContainer" class="pagination"></div>
+        </main>
+    </div>
+</div>
 
-            function buildSearchUrl() {
-                const params = new URLSearchParams();
+<script>
+    (function() {
+        const state = {
+            query: '',
+            skip: 0,
+            take: 10,
+            filters: {
+                zodiac: [],
+                genre: [],
+                generation: []
+            },
+            sortBy: '',
+            sortDirection: 'desc',
+            total: 0,
+            facets: []
+        };
 
-                if (state.query) {
-                    params.append('query', state.query);
+        const elements = {
+            searchForm: document.getElementById('searchForm'),
+            searchQuery: document.getElementById('searchQuery'),
+            sortBy: document.getElementById('sortBy'),
+            sortDirection: document.getElementById('sortDirection'),
+            facetsContainer: document.getElementById('facetsContainer'),
+            resultsContainer: document.getElementById('resultsContainer'),
+            resultsCount: document.getElementById('resultsCount'),
+            paginationContainer: document.getElementById('paginationContainer'),
+            clearFilters: document.getElementById('clearFilters')
+        };
+
+        function buildSearchUrl() {
+            const params = new URLSearchParams();
+
+            if (state.query) {
+                params.append('query', state.query);
+            }
+            params.append('skip', state.skip);
+            params.append('take', state.take);
+
+            state.filters.zodiac.forEach(v => params.append('zodiac', v));
+            state.filters.genre.forEach(v => params.append('genre', v));
+            state.filters.generation.forEach(v => params.append('generation', v));
+
+            if (state.sortBy) {
+                params.append('sortBy', state.sortBy);
+            }
+            params.append('sortDirection', state.sortDirection);
+
+            return '/api/personsearch?' + params.toString();
+        }
+
+        async function performSearch() {
+            elements.resultsContainer.innerHTML = '<div class="loading">Loading...</div>';
+
+            try {
+                const response = await fetch(buildSearchUrl());
+                if (!response.ok) {
+                    throw new Error('Search request failed');
                 }
-                params.append('skip', state.skip);
-                params.append('take', state.take);
+                const data = await response.json();
 
-                state.filters.zodiac.forEach(v => params.append('zodiac', v));
-                state.filters.genre.forEach(v => params.append('genre', v));
-                state.filters.personality.forEach(v => params.append('personality', v));
-                state.filters.generation.forEach(v => params.append('generation', v));
+                state.total = data.total;
+                state.facets = data.facets || [];
 
-                if (state.sortBy) {
-                    params.append('sortBy', state.sortBy);
-                }
-                params.append('sortDirection', state.sortDirection);
+                renderResults(data.items);
+                renderFacets(data.facets);
+                renderPagination();
+                updateResultsCount();
+            } catch (error) {
+                elements.resultsContainer.innerHTML = '<div class="no-results">An error occurred while searching. Please try again.</div>';
+                console.error('Search error:', error);
+            }
+        }
 
-                return '/api/membersearch?' + params.toString();
+        function renderResults(items) {
+            if (!items || items.length === 0) {
+                elements.resultsContainer.innerHTML = '<div class="no-results">No people found. Try adjusting your search or filters.</div>';
+                return;
             }
 
-            async function performSearch() {
-                elements.resultsContainer.innerHTML = '<div class="loading">Loading...</div>';
-
-                try {
-                    const response = await fetch(buildSearchUrl());
-                    if (!response.ok) {
-                        throw new Error('Search request failed');
-                    }
-                    const data = await response.json();
-
-                    state.total = data.total;
-                    state.facets = data.facets || [];
-
-                    renderResults(data.items);
-                    renderFacets(data.facets);
-                    renderPagination();
-                    updateResultsCount();
-                } catch (error) {
-                    elements.resultsContainer.innerHTML = '<div class="no-results">An error occurred while searching. Please try again.</div>';
-                    console.error('Search error:', error);
-                }
-            }
-
-            function renderResults(items) {
-                if (!items || items.length === 0) {
-                    elements.resultsContainer.innerHTML = '<div class="no-results">No members found. Try adjusting your search or filters.</div>';
-                    return;
-                }
-
-                elements.resultsContainer.innerHTML = items.map(item => {
-                    return `
+            elements.resultsContainer.innerHTML = items.map(item => {
+                return `
                         <article class="item-card">
                             <h3>${escapeHtml(item.name)} <small class="item-meta">${item.email}</small></h3>
                             <div class="item-meta">
@@ -359,59 +357,57 @@
                                 ${item.generation ? `<span><strong>Generation:</strong> ${item.generation}</span>` : ''}
                                 ${item.genre ? `<span><strong>Genre:</strong> ${item.genre}</span>` : ''}
                                 ${item.birthdate ? `<span><strong>Birthdate:</strong> ${(new Date(item.birthdate)).toLocaleDateString('en-GB')}</span>` : ''}
-                                ${item.personality ? `<span><strong>Personality:</strong> ${item.personality}</span>` : ''}
                             </div>
                         </article>
                     `;
-                }).join('');
+            }).join('');
+        }
+
+        function renderFacets(facets) {
+            if (!facets || facets.length === 0) {
+                elements.facetsContainer.innerHTML = '<p>No filters available</p>';
+                return;
             }
 
-            function renderFacets(facets) {
-                if (!facets || facets.length === 0) {
-                    elements.facetsContainer.innerHTML = '<p>No filters available</p>';
-                    return;
+            const facetLabels = {
+                'zodiac': 'Zodiac',
+                'genre': 'Genre',
+                'generation': 'Generation',
+            };
+
+            const facetOrder = ['generation', 'zodiac', 'genre'];
+            const sortedFacets = [...facets].sort((a, b) => {
+                const indexA = facetOrder.indexOf(a.fieldName);
+                const indexB = facetOrder.indexOf(b.fieldName);
+                return indexA - indexB;
+            });
+
+            const generationOrder = ['Silent Generation', 'Boomers', 'Generation X', 'Millennials', 'Zoomers', 'Generation Alpha'];
+
+            function sortFacetValues(fieldName, values) {
+                if (fieldName === 'generation') {
+                    return [...values].sort((a, b) => {
+                        const indexA = generationOrder.indexOf(a.key);
+                        const indexB = generationOrder.indexOf(b.key);
+                        return indexA - indexB;
+                    });
+                } else {
+                    return [...values].sort((a, b) => a.key.localeCompare(b.key));
+                }
+            }
+
+            elements.facetsContainer.innerHTML = sortedFacets.map(facet => {
+                const filterKey = facet.fieldName;
+                const label = facetLabels[filterKey] || filterKey;
+
+                if (!facet.values || facet.values.length === 0) {
+                    return '';
                 }
 
-                const facetLabels = {
-                    'zodiac': 'Zodiac',
-                    'genre': 'Genre',
-                    'personality': 'Personality',
-                    'generation': 'Generation',
-                };
-
-                const facetOrder = ['generation', 'personality', 'zodiac', 'genre'];
-                const sortedFacets = [...facets].sort((a, b) => {
-                    const indexA = facetOrder.indexOf(a.fieldName);
-                    const indexB = facetOrder.indexOf(b.fieldName);
-                    return indexA - indexB;
-                });
-
-                const generationOrder = ['Silent Generation', 'Boomers', 'Generation X', 'Millennials', 'Zoomers', 'Generation Alpha'];
-
-                function sortFacetValues(fieldName, values) {
-                    if (fieldName === 'generation') {
-                        return [...values].sort((a, b) => {
-                            const indexA = generationOrder.indexOf(a.key);
-                            const indexB = generationOrder.indexOf(b.key);
-                            return indexA - indexB;
-                        });
-                    } else {
-                        return [...values].sort((a, b) => a.key.localeCompare(b.key));
-                    }
-                }
-
-                elements.facetsContainer.innerHTML = sortedFacets.map(facet => {
-                    const filterKey = facet.fieldName;
-                    const label = facetLabels[filterKey] || filterKey;
-
-                    if (!facet.values || facet.values.length === 0) {
-                        return '';
-                    }
-
-                    const sortedValues = sortFacetValues(filterKey, facet.values);
-                    const options = sortedValues.map(value => {
-                        const isChecked = state.filters[filterKey] && state.filters[filterKey].includes(value.key);
-                        return `
+                const sortedValues = sortFacetValues(filterKey, facet.values);
+                const options = sortedValues.map(value => {
+                    const isChecked = state.filters[filterKey] && state.filters[filterKey].includes(value.key);
+                    return `
                             <label class="filter-option">
                                 <input type="checkbox"
                                        data-filter="${filterKey}"
@@ -421,139 +417,139 @@
                                 <span class="filter-count">(${value.count})</span>
                             </label>
                         `;
-                    }).join('');
+                }).join('');
 
-                    return `
+                return `
                         <div class="filter-group">
                             <h4>${label}</h4>
                             ${options}
                         </div>
                     `;
-                }).join('');
+            }).join('');
 
-                elements.facetsContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.addEventListener('change', handleFilterChange);
+            elements.facetsContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', handleFilterChange);
+            });
+        }
+
+        function renderPagination() {
+            const totalPages = Math.ceil(state.total / state.take);
+            const currentPage = Math.floor(state.skip / state.take) + 1;
+
+            if (totalPages <= 1) {
+                elements.paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let html = '';
+
+            html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">&laquo; Prev</button>`;
+
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+
+            if (startPage > 1) {
+                html += `<button data-page="1">1</button>`;
+                if (startPage > 2) {
+                    html += `<span>...</span>`;
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `<button data-page="${i}" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `<span>...</span>`;
+                }
+                html += `<button data-page="${totalPages}">${totalPages}</button>`;
+            }
+
+            html += `<button ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">Next &raquo;</button>`;
+
+            elements.paginationContainer.innerHTML = html;
+
+            elements.paginationContainer.querySelectorAll('button[data-page]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const page = parseInt(this.dataset.page);
+                    state.skip = (page - 1) * state.take;
+                    performSearch();
                 });
-            }
-
-            function renderPagination() {
-                const totalPages = Math.ceil(state.total / state.take);
-                const currentPage = Math.floor(state.skip / state.take) + 1;
-
-                if (totalPages <= 1) {
-                    elements.paginationContainer.innerHTML = '';
-                    return;
-                }
-
-                let html = '';
-
-                html += `<button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">&laquo; Prev</button>`;
-
-                const startPage = Math.max(1, currentPage - 2);
-                const endPage = Math.min(totalPages, currentPage + 2);
-
-                if (startPage > 1) {
-                    html += `<button data-page="1">1</button>`;
-                    if (startPage > 2) {
-                        html += `<span>...</span>`;
-                    }
-                }
-
-                for (let i = startPage; i <= endPage; i++) {
-                    html += `<button data-page="${i}" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
-                }
-
-                if (endPage < totalPages) {
-                    if (endPage < totalPages - 1) {
-                        html += `<span>...</span>`;
-                    }
-                    html += `<button data-page="${totalPages}">${totalPages}</button>`;
-                }
-
-                html += `<button ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">Next &raquo;</button>`;
-
-                elements.paginationContainer.innerHTML = html;
-
-                elements.paginationContainer.querySelectorAll('button[data-page]').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const page = parseInt(this.dataset.page);
-                        state.skip = (page - 1) * state.take;
-                        performSearch();
-                    });
-                });
-            }
-
-            function updateResultsCount() {
-                const start = state.skip + 1;
-                const end = Math.min(state.skip + state.take, state.total);
-
-                if (state.total === 0) {
-                    elements.resultsCount.textContent = 'No results';
-                } else {
-                    elements.resultsCount.textContent = `Showing ${start}-${end} of ${state.total} members`;
-                }
-            }
-
-            function handleFilterChange(e) {
-                const filterKey = e.target.dataset.filter;
-                const value = e.target.value;
-
-                if (e.target.checked) {
-                    if (!state.filters[filterKey].includes(value)) {
-                        state.filters[filterKey].push(value);
-                    }
-                } else {
-                    state.filters[filterKey] = state.filters[filterKey].filter(v => v !== value);
-                }
-
-                state.skip = 0;
-                performSearch();
-            }
-
-            function resetFilters() {
-                state.filters.length = [];
-                state.filters.authorNationality = [];
-                state.filters.publishYear = [];
-            }
-
-            function clearAllFilters() {
-                resetFilters();
-                state.skip = 0;
-                performSearch();
-            }
-
-            function escapeHtml(text) {
-                if (!text) return '';
-                const div = document.createElement('div');
-                div.textContent = text;
-                return div.innerHTML;
-            }
-
-            elements.searchForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                state.query = elements.searchQuery.value;
-                state.sortBy = elements.sortBy.value;
-                state.sortDirection = elements.sortDirection.value;
-                state.skip = 0;
-                performSearch();
             });
+        }
 
-            elements.sortBy.addEventListener('change', function() {
-                state.sortBy = this.value;
-                state.skip = 0;
-                performSearch();
-            });
+        function updateResultsCount() {
+            const start = state.skip + 1;
+            const end = Math.min(state.skip + state.take, state.total);
 
-            elements.sortDirection.addEventListener('change', function() {
-                state.sortDirection = this.value;
-                state.skip = 0;
-                performSearch();
-            });
+            if (state.total === 0) {
+                elements.resultsCount.textContent = 'No results';
+            } else {
+                elements.resultsCount.textContent = `Showing ${start}-${end} of ${state.total} people`;
+            }
+        }
 
-            elements.clearFilters.addEventListener('click', clearAllFilters);
+        function handleFilterChange(e) {
+            const filterKey = e.target.dataset.filter;
+            const value = e.target.value;
 
+            if (e.target.checked) {
+                if (!state.filters[filterKey].includes(value)) {
+                    state.filters[filterKey].push(value);
+                }
+            } else {
+                state.filters[filterKey] = state.filters[filterKey].filter(v => v !== value);
+            }
+
+            state.skip = 0;
             performSearch();
-        })();
-    </script>
+        }
+
+        function resetFilters() {
+            state.filters.length = [];
+            state.filters.authorNationality = [];
+            state.filters.publishYear = [];
+        }
+
+        function clearAllFilters() {
+            resetFilters();
+            state.skip = 0;
+            performSearch();
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        elements.searchForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            state.query = elements.searchQuery.value;
+            state.sortBy = elements.sortBy.value;
+            state.sortDirection = elements.sortDirection.value;
+            state.skip = 0;
+            performSearch();
+        });
+
+        elements.sortBy.addEventListener('change', function() {
+            state.sortBy = this.value;
+            state.skip = 0;
+            performSearch();
+        });
+
+        elements.sortDirection.addEventListener('change', function() {
+            state.sortDirection = this.value;
+            state.skip = 0;
+            performSearch();
+        });
+
+        elements.clearFilters.addEventListener('click', clearAllFilters);
+
+        performSearch();
+    })();
+</script>
 </body>
 </html>

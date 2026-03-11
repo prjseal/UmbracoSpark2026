@@ -4,13 +4,13 @@ using Site.Services;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Notifications;
 
-namespace Site.NotificationHandlers;
+namespace Site.Stuff;
 
-public class InitializePersonServiceNotificationHandler : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
+public class SeedPersonServiceNotificationHandler : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
     private readonly IPersonService _personService;
 
-    public InitializePersonServiceNotificationHandler(IPersonService personService)
+    public SeedPersonServiceNotificationHandler(IPersonService personService)
         => _personService = personService;
 
     public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)

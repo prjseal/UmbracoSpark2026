@@ -7,7 +7,8 @@ using SearchConstants = Umbraco.Cms.Search.Core.Constants;
 
 namespace Site.NotificationHandlers;
 
-public class RecipeRatingIndexingNotificationHandler : INotificationAsyncHandler<IndexingNotification>
+// an alternative approach to indexing recipe ratings (not used in this demo)
+public class RecipeRatingIndexingNotificationHandler : INotificationAsyncHandler<ContentIndexingNotification>
 {
     private readonly IPublishedContentCache _publishedContentCache;
     private readonly IRecipeRatingService _recipeRatingService;
@@ -18,9 +19,9 @@ public class RecipeRatingIndexingNotificationHandler : INotificationAsyncHandler
         _recipeRatingService = recipeRatingService;
     }
 
-    public async Task HandleAsync(IndexingNotification notification, CancellationToken cancellationToken)
+    public async Task HandleAsync(ContentIndexingNotification notification, CancellationToken cancellationToken)
     {
-        if (notification.IndexInfo.IndexAlias is not SearchConstants.IndexAliases.PublishedContent)
+        if (notification.IndexAlias is not (SearchConstants.IndexAliases.PublishedContent or SiteConstants.IndexAliases.CustomIndexElasticsearch))
         {
             return;
         }

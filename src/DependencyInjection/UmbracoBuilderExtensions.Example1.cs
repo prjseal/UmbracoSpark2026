@@ -1,11 +1,10 @@
 ﻿using Kjac.SearchProvider.Elasticsearch.DependencyInjection;
 using Kjac.SearchProvider.Elasticsearch.Services;
-using Site.NotificationHandlers;
+using Site.ContentIndexing;
 using Site.Services;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Configuration;
 using Umbraco.Cms.Search.Core.DependencyInjection;
-using Umbraco.Cms.Search.Core.Notifications;
 using Umbraco.Cms.Search.Core.Services.ContentIndexing;
 using Umbraco.Cms.Search.Provider.Examine.Configuration;
 using Umbraco.Cms.Search.Provider.Examine.DependencyInjection;
@@ -29,7 +28,7 @@ public static partial class UmbracoBuilderExtensions
 
         // register a custom published content index with the Elasticsearch provider
         builder.Services.Configure<IndexOptions>(options =>
-            options.RegisterIndex<IElasticsearchIndexer, IElasticsearchSearcher, IPublishedContentChangeStrategy>
+            options.RegisterContentIndex<IElasticsearchIndexer, IElasticsearchSearcher, IPublishedContentChangeStrategy>
             (
                 SiteConstants.IndexAliases.CustomIndexElasticsearch,
                 UmbracoObjectTypes.Document
@@ -38,12 +37,8 @@ public static partial class UmbracoBuilderExtensions
 
         // add the required services for example one
         builder.Services
-            .AddSingleton<IRecipeRatingService, RecipeRatingService>();
-
-        // add notification handlers for custom indexing
-        builder
-            .AddNotificationHandler<IndexingNotification, AddSearchProviderNameIndexingNotificationHandler>()
-            .AddNotificationAsyncHandler<IndexingNotification, RecipeRatingIndexingNotificationHandler>();
+            .AddSingleton<IRecipeRatingService, RecipeRatingService>()
+            .AddTransient<IContentIndexer, RecipeRatingContentIndexer>();
 
         return builder;
     }
@@ -90,3 +85,14 @@ public static partial class UmbracoBuilderExtensions
         );
     }
 }
+
+
+
+
+
+
+
+
+
+
+

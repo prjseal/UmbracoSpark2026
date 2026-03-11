@@ -1,5 +1,6 @@
 ﻿using Kjac.SearchProvider.Elasticsearch.Services;
 using Site.Extensions;
+using Site.Models;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 
@@ -33,7 +34,7 @@ public class PersonIndexingService : IPersonIndexingService
         foreach (var person in people)
         {
             // get the index fields for the person
-            var fields = person.AsIndexFields();
+            var fields = GetIndexFields(person);
 
             // add the person to the index
             await _indexer.AddOrUpdateAsync(
@@ -47,4 +48,46 @@ public class PersonIndexingService : IPersonIndexingService
 
         _logger.LogInformation("Finished rebuild of index: {indexAlias}", IndexAlias);
     }
+
+    private static IEnumerable<IndexField> GetIndexFields(Person person)
+        =>
+        [
+            new(
+                SiteConstants.FieldNames.Zodiac,
+                new IndexValue
+                {
+                    Keywords = [person.Zodiac]
+                },
+                Culture: null,
+                Segment: null
+            ),
+            new(
+                SiteConstants.FieldNames.Name,
+                new IndexValue
+                {
+                    Texts = [person.Name]
+                },
+                Culture: null,
+                Segment: null
+            ),
+            new(
+                SiteConstants.FieldNames.Birthdate,
+                new IndexValue
+                {
+                    DateTimeOffsets = [person.Birthdate]
+                },
+                Culture: null,
+                Segment: null
+            ),
+            new(
+                SiteConstants.FieldNames.Genre,
+                new IndexValue
+                {
+                    Keywords = [person.Genre],
+                    Texts = [person.Genre],
+                },
+                Culture: null,
+                Segment: null
+            ),
+        ];
 }

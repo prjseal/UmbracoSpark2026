@@ -2,14 +2,14 @@
 using Umbraco.Cms.Search.Core.Models.Indexing;
 using Umbraco.Cms.Search.Core.Notifications;
 
-namespace Site.NotificationHandlers;
+namespace Site.Stuff;
 
-public class AddSearchProviderNameIndexingNotificationHandler : INotificationHandler<IndexingNotification>
+public class AddSearchProviderNameIndexingNotificationHandler : INotificationHandler<ContentIndexingNotification>
 {
-    public void Handle(IndexingNotification notification)
+    public void Handle(ContentIndexingNotification notification)
     {
         // figure out the name of the search provider (based on the index alias)
-        var searchProviderName = notification.IndexInfo.IndexAlias switch
+        var searchProviderName = notification.IndexAlias switch
         {
             Umbraco.Cms.Search.Core.Constants.IndexAliases.PublishedContent => "Examine",
             SiteConstants.IndexAliases.CustomIndexElasticsearch => "Elasticsearch",
