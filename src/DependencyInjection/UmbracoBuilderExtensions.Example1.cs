@@ -1,5 +1,5 @@
 ﻿using Kjac.SearchProvider.Elasticsearch.DependencyInjection;
-using Kjac.SearchProvider.Elasticsearch.Services;
+using Kjac.SearchProvider.Elasticsearch.Extensions;
 using Site.ContentIndexing;
 using Site.Services;
 using Umbraco.Cms.Core.Models;
@@ -28,7 +28,7 @@ public static partial class UmbracoBuilderExtensions
 
         // register a custom published content index with the Elasticsearch provider
         builder.Services.Configure<IndexOptions>(options =>
-            options.RegisterContentIndex<IElasticsearchIndexer, IElasticsearchSearcher, IPublishedContentChangeStrategy>
+            options.RegisterElasticsearchContentIndex<IPublishedContentChangeStrategy>
             (
                 SiteConstants.IndexAliases.CustomIndexElasticsearch,
                 UmbracoObjectTypes.Document
