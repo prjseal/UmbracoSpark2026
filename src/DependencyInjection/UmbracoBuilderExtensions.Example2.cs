@@ -8,8 +8,8 @@ public static partial class UmbracoBuilderExtensions
     {
         // add the required services for example two
         builder.Services
-            .AddSingleton<IPersonService, PersonService>()
-            .AddSingleton<IPersonIndexingService, PersonIndexingService>();
+            .AddSingleton<IPeopleService, PeopleService>()
+            .AddSingleton<IPeopleIndexingService, PeopleIndexingService>();
 
         return builder;
     }

@@ -1,21 +1,20 @@
 ﻿using Kjac.SearchProvider.Elasticsearch.Services;
-using Site.Extensions;
 using Site.Models;
 using Umbraco.Cms.Core.Models;
 using Umbraco.Cms.Search.Core.Models.Indexing;
 
 namespace Site.Services;
 
-public class PersonIndexingService : IPersonIndexingService
+public class PeopleIndexingService : IPeopleIndexingService
 {
     private readonly IElasticsearchIndexer _indexer;
-    private readonly IPersonService _personService;
-    private readonly ILogger<PersonIndexingService> _logger;
+    private readonly IPeopleService _peopleService;
+    private readonly ILogger<PeopleIndexingService> _logger;
 
-    public PersonIndexingService(IElasticsearchIndexer indexer, IPersonService personService, ILogger<PersonIndexingService> logger)
+    public PeopleIndexingService(IElasticsearchIndexer indexer, IPeopleService peopleService, ILogger<PeopleIndexingService> logger)
     {
         _indexer = indexer;
-        _personService = personService;
+        _peopleService = peopleService;
         _logger = logger;
     }
 
@@ -25,8 +24,8 @@ public class PersonIndexingService : IPersonIndexingService
     {
         _logger.LogInformation("Starting rebuild of index: {indexAlias}...", IndexAlias);
 
-        // fetch all people from the person service
-        var people = await _personService.GetAllAsync();
+        // fetch all people from the people service
+        var people = await _peopleService.GetAllAsync();
 
         // reset the search index before rebuilding the index
         await _indexer.ResetAsync(IndexAlias);

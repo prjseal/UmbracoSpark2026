@@ -8,10 +8,10 @@ namespace Site.Stuff;
 
 public class SeedPersonServiceNotificationHandler : INotificationAsyncHandler<UmbracoApplicationStartedNotification>
 {
-    private readonly IPersonService _personService;
+    private readonly IPeopleService _peopleService;
 
-    public SeedPersonServiceNotificationHandler(IPersonService personService)
-        => _personService = personService;
+    public SeedPersonServiceNotificationHandler(IPeopleService peopleService)
+        => _peopleService = peopleService;
 
     public async Task HandleAsync(UmbracoApplicationStartedNotification notification, CancellationToken cancellationToken)
     {
@@ -19,6 +19,6 @@ public class SeedPersonServiceNotificationHandler : INotificationAsyncHandler<Um
         var people = JsonSerializer.Deserialize<Person[]>(text, JsonSerializerOptions.Web)
                    ?? throw new InvalidOperationException("Could not deserialize the JSON file");
 
-        _personService.Seed(people);
+        _peopleService.Seed(people);
     }
 }

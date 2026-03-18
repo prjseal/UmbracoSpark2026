@@ -7,15 +7,15 @@ namespace Site.Stuff;
 [Route("api/[controller]")]
 public class PersonIndexingController : ControllerBase
 {
-    private readonly IPersonIndexingService _personIndexingService;
+    private readonly IPeopleIndexingService _peopleIndexingService;
 
-    public PersonIndexingController(IPersonIndexingService personIndexingService)
-        => _personIndexingService = personIndexingService;
+    public PersonIndexingController(IPeopleIndexingService peopleIndexingService)
+        => _peopleIndexingService = peopleIndexingService;
 
     [HttpPost]
     public async Task<IActionResult> Rebuild()
     {
-        await _personIndexingService.RebuildIndexAsync();
+        await _peopleIndexingService.RebuildIndexAsync();
         return Ok("👍");
     }
 }

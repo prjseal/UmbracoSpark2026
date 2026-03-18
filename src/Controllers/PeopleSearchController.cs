@@ -11,15 +11,15 @@ namespace Site.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PersonSearchController : ControllerBase
+public class PeopleSearchController : ControllerBase
 {
     private readonly IElasticsearchSearcher _searcher;
-    private readonly IPersonService _personService;
+    private readonly IPeopleService _peopleService;
 
-    public PersonSearchController(IElasticsearchSearcher searcher, IPersonService personService)
+    public PeopleSearchController(IElasticsearchSearcher searcher, IPeopleService peopleService)
     {
         _searcher = searcher;
-        _personService = personService;
+        _peopleService = peopleService;
     }
 
     // these are the ranges used for generation filtering and faceting
@@ -126,9 +126,9 @@ public class PersonSearchController : ControllerBase
             skip: skip,
             take: take);
 
-        // fetch the resulting people from the person service
+        // fetch the resulting people from the people service
         var resultKeys = result.Documents.Select(d => d.Id).ToArray();
-        var people = await _personService.GetByIdsAsync(resultKeys);
+        var people = await _peopleService.GetByIdsAsync(resultKeys);
 
         // create search result view models 
         var personSearchResultItemModels = people
