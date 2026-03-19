@@ -127,12 +127,12 @@ public class PeopleSearchController : ControllerBase
             take: take);
 
         // fetch the resulting people from the people service
-        var resultKeys = result.Documents.Select(d => d.Id).ToArray();
-        var people = await _peopleService.GetByIdsAsync(resultKeys);
+        var resultIds = result.Documents.Select(d => d.Id).ToArray();
+        var people = await _peopleService.GetByIdsAsync(resultIds);
 
         // create search result view models 
         var personSearchResultItemModels = people
-            .OrderBy(person => resultKeys.IndexOf(person.Id))
+            .OrderBy(person => resultIds.IndexOf(person.Id))
             .Select(person =>
             {
                 var generationLabel = GenerationRanges.Single(r => person.Birthdate >= r.From && person.Birthdate < r.To).Label;
