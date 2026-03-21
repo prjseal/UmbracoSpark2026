@@ -1,20 +1,33 @@
-﻿using Site.Models;
+﻿using System.Text.Json;
+using Site.Models;
 
 namespace Site.Services;
 
 public class PeopleService : IPeopleService
 {
-    private readonly List<Person> _people = new();
+    private Person[]? _people;
 
-    public void Seed(IEnumerable<Person> people)
+    public async Task<IEnumerable<Person>> GetAllAsync()
     {
-        _people.Clear();
-        _people.AddRange(people);
+        await EnsurePeopleAreLoaded();
+        return _people!;
     }
 
-    public Task<IEnumerable<Person>> GetAllAsync()
-        => Task.FromResult<IEnumerable<Person>>(_people);
+    public async Task<IEnumerable<Person>> GetByIdsAsync(params Guid[] ids)
+    {
+        await EnsurePeopleAreLoaded();
+        return _people!.Where(person => ids.Contains(person.Id));
+    }
 
-    public Task<IEnumerable<Person>> GetByIdsAsync(params Guid[] ids)
-        => Task.FromResult(_people.Where(person => ids.Contains(person.Id)));
+    private async Task EnsurePeopleAreLoaded()
+    {
+        if (_people is not null)
+        {
+            return;
+        }
+        var text = await File.ReadAllTextAsync("people.json");
+        
+        _people = JsonSerializer.Deserialize<Person[]>(text, JsonSerializerOptions.Web)
+                     ?? throw new InvalidOperationException("Could not deserialize the JSON file");
+    }
 }
