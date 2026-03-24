@@ -14,13 +14,13 @@ All documentation lives in the `/docs` folder. It is split into phases to be wri
 |-------|------|--------|-------|
 | 1 | [docs/01-introduction.md](docs/01-introduction.md) | ✅ Done | What is the new search API, and how does it compare to classic Examine? |
 | 2 | [docs/02-architecture.md](docs/02-architecture.md) | ✅ Done | Architecture diagrams — how providers, indexes, indexers, and searchers fit together |
-| 3 | [docs/03-setup-and-registration.md](docs/03-setup-and-registration.md) | ⬜ Pending | Installing packages, registering providers, Elasticsearch config |
-| 4 | [docs/04-indexing-content.md](docs/04-indexing-content.md) | ⬜ Pending | Adding custom fields to content indexes via `IContentIndexer` and `ContentIndexingNotification` |
-| 5 | [docs/05-custom-data-indexes.md](docs/05-custom-data-indexes.md) | ⬜ Pending | Indexing non-Umbraco data (the People example) |
-| 6 | [docs/06-content-change-strategies.md](docs/06-content-change-strategies.md) | ⬜ Pending | Controlling what gets re-indexed when content changes (`IContentChangeStrategy`) |
-| 7 | [docs/07-searching.md](docs/07-searching.md) | ⬜ Pending | Querying: filters, facets, sorters, pagination |
-| 8 | [docs/08-examine-gotchas.md](docs/08-examine-gotchas.md) | ⬜ Pending | Examine-specific requirements and performance warnings |
-| 9 | [docs/09-real-time-updates.md](docs/09-real-time-updates.md) | ⬜ Pending | Triggering index refreshes from code (`IDistributedContentIndexRefresher`) |
+| 3 | [docs/03-setup-and-registration.md](docs/03-setup-and-registration.md) | ✅ Done | Installing packages, registering providers, Elasticsearch config |
+| 4 | [docs/04-indexing-content.md](docs/04-indexing-content.md) | ✅ Done | Adding custom fields to content indexes via `IContentIndexer` and `ContentIndexingNotification` |
+| 5 | [docs/05-custom-data-indexes.md](docs/05-custom-data-indexes.md) | ✅ Done | Indexing non-Umbraco data (the People example) |
+| 6 | [docs/06-content-change-strategies.md](docs/06-content-change-strategies.md) | ✅ Done | Controlling what gets re-indexed when content changes (`IContentChangeStrategy`) |
+| 7 | [docs/07-searching.md](docs/07-searching.md) | ✅ Done | Querying: filters, facets, sorters, pagination |
+| 8 | [docs/08-examine-gotchas.md](docs/08-examine-gotchas.md) | ✅ Done | Examine-specific requirements and performance warnings |
+| 9 | [docs/09-real-time-updates.md](docs/09-real-time-updates.md) | ✅ Done | Triggering index refreshes from code (`IDistributedContentIndexRefresher`) |
 
 ---
 
