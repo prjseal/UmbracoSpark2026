@@ -290,6 +290,27 @@ Block Grid values need to be read from the **published content model** (`IPublis
 
 ### The approach
 
+```mermaid
+sequenceDiagram
+    participant CIS as IContentIndexingService
+    participant NIH as ArticleContentIndexer
+    participant PCC as IPublishedContentCache
+    participant BGM as BlockGridModel
+
+    CIS->>NIH: ContentIndexingNotification (article published)
+    NIH->>PCC: GetByIdAsync(notification.Id)
+    PCC-->>NIH: IPublishedContent (article)
+    NIH->>BGM: content.Value<BlockGridModel>("mainContent")
+    BGM-->>NIH: BlockGridModel with Items + Areas
+    loop For each BlockGridItem (recursive)
+        NIH->>NIH: ExtractText(item.Content.Properties)
+        NIH->>NIH: Recurse into item.Areas
+    end
+    NIH->>NIH: Union new IndexField("mainContent", Texts=[...]) onto notification.Fields
+    NIH-->>CIS: Fields collection updated
+    CIS->>CIS: Write document to index
+```
+
 1. Handle `ContentIndexingNotification`
 2. Fetch the published content via `IPublishedContentCache`
 3. Read the property as `BlockGridModel`
