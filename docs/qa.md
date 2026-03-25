@@ -283,3 +283,102 @@ There is no per-index `FieldOptions`. All Examine-backed indexes share one confi
 If you declare a field as `FieldValues.Keywords` but write it with `IndexValue { Texts = [...] }`, facet and sort results will be wrong or empty. Always match the declaration to the value type you actually write.
 
 ---
+
+## How do I index a Block Grid property (e.g. `mainContent` on an article document type)?
+
+Block Grid values need to be read from the **published content model** (`IPublishedContent`) to be parsed into a `BlockGridModel`. That means the `ContentIndexingNotification` approach is the right choice here — `IContentIndexer` only gives you `IContentBase`, which holds the raw unpublished property value as JSON rather than a usable model.
+
+### The approach
+
+1. Handle `ContentIndexingNotification`
+2. Fetch the published content via `IPublishedContentCache`
+3. Read the property as `BlockGridModel`
+4. Walk all blocks (and their areas) recursively to extract text
+5. Write the combined text as a `Texts` field so it is full-text searchable
+
+### Example implementation
+
+```csharp
+public class ArticleContentIndexer : INotificationAsyncHandler<ContentIndexingNotification>
+{
+    private readonly IPublishedContentCache _publishedContentCache;
+
+    public ArticleContentIndexer(IPublishedContentCache publishedContentCache)
+        => _publishedContentCache = publishedContentCache;
+
+    public async Task HandleAsync(ContentIndexingNotification notification, CancellationToken ct)
+    {
+        // only handle the relevant index(es)
+        if (notification.IndexAlias is not SearchConstants.IndexAliases.PublishedContent)
+            return;
+
+        var content = await _publishedContentCache.GetByIdAsync(notification.Id);
+        if (content?.ContentType.Alias != "article")
+            return;
+
+        var blockGrid = content.Value<BlockGridModel>("mainContent");
+        if (blockGrid is null)
+            return;
+
+        var texts = ExtractText(blockGrid.Items).ToArray();
+        if (texts.Length == 0)
+            return;
+
+        notification.Fields = notification.Fields
+            .Union([
+                new IndexField(
+                    FieldName: "mainContent",
+                    Value: new IndexValue { Texts = texts },
+                    Culture: null,
+                    Segment: null
+                )
+            ])
+            .ToArray();
+    }
+
+    private static IEnumerable<string> ExtractText(IEnumerable<BlockGridItem> items)
+    {
+        foreach (var item in items)
+        {
+            // extract text from each property on the block's content element
+            foreach (var property in item.Content.Properties)
+            {
+                var value = item.Content.Value<string>(property.Alias);
+                if (!string.IsNullOrWhiteSpace(value))
+                    yield return value;
+            }
+
+            // recurse into grid areas (columns / zones)
+            foreach (var area in item.Areas)
+            foreach (var text in ExtractText(area.Items))
+                yield return text;
+        }
+    }
+}
+```
+
+### Registration
+
+```csharp
+builder.AddNotificationAsyncHandler<ContentIndexingNotification, ArticleContentIndexer>();
+```
+
+### Things to watch out for
+
+**Rich text blocks produce HTML.** If any of your blocks contain a Rich Text Editor property, `Value<string>()` will return raw HTML including tags like `<p>`, `<strong>`, etc. Strip the HTML before indexing so tags don't pollute search results:
+
+```csharp
+var value = item.Content.Value<string>(property.Alias);
+if (!string.IsNullOrWhiteSpace(value))
+{
+    var text = Regex.Replace(value, "<[^>]+>", " ").Trim();
+    if (!string.IsNullOrWhiteSpace(text))
+        yield return text;
+}
+```
+
+**Not all properties are text.** Iterating over every property and calling `Value<string>()` will return `null` for non-text properties (media pickers, content pickers, checkboxes, etc.) — safely skipped by the `IsNullOrWhiteSpace` guard. If you want to be more selective, guard on `item.Content.ContentType.Alias` or `property.Alias`.
+
+**Culture-variant content.** If your site is multilingual, loop over the cultures provided by the notification and create a separate `IndexField` per culture, passing the culture string instead of `null` for the `Culture` parameter.
+
+---
