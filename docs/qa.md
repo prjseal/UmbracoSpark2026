@@ -286,7 +286,15 @@ If you declare a field as `FieldValues.Keywords` but write it with `IndexValue {
 
 ## How do I index a Block Grid property (e.g. `mainContent` on an article document type)?
 
-Block Grid values need to be read from the **published content model** (`IPublishedContent`) to be parsed into a `BlockGridModel`. That means the `ContentIndexingNotification` approach is the right choice here — `IContentIndexer` only gives you `IContentBase`, which holds the raw unpublished property value as JSON rather than a usable model.
+> **Short answer: you don't need to.** The new search API indexes Block Grid properties automatically via the built-in `BlockGridPropertyValueHandler`. It recursively processes all nested block properties, accumulates their text, keyword, numeric, and date values, and strips HTML from any rich text blocks. The field appears in the index under the property alias (e.g. `mainContent`).
+
+A custom indexer is only needed if you want to **change what gets indexed** — for example, indexing only specific block types, adding computed values, or transforming the content in some way.
+
+---
+
+### If you do need a custom Block Grid indexer
+
+Block Grid values need to be read from the **published content model** (`IPublishedContent`) to be parsed into a `BlockGridModel`. That means the `ContentIndexingNotification` approach is the right choice — `IContentIndexer` only gives you `IContentBase`, which holds the raw unpublished property value as JSON rather than a usable model.
 
 ### The approach
 
