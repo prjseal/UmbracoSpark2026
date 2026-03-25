@@ -404,6 +404,73 @@ if (!string.IsNullOrWhiteSpace(value))
 
 ---
 
+## What indexes does the Examine provider register, and what fields do they contain by default?
+
+### The four indexes
+
+Calling `AddExamineSearchProvider()` registers four Lucene indexes:
+
+| Alias constant | Actual alias string | Object type | Change strategy |
+|---|---|---|---|
+| `Constants.IndexAliases.DraftContent` | `Umb_Content` | Document | `IDraftContentChangeStrategy` |
+| `Constants.IndexAliases.PublishedContent` | `Umb_PublishedContent` | Document | `IPublishedContentChangeStrategy` |
+| `Constants.IndexAliases.DraftMedia` | `Umb_Media` | Media | `IDraftContentChangeStrategy` |
+| `Constants.IndexAliases.DraftMembers` | `Umb_Members` | Member | `IDraftContentChangeStrategy` |
+
+> Note: these alias strings are different from classic Examine (`InternalIndex`, `ExternalIndex`, etc.). Any code that hard-codes the old names will break.
+
+---
+
+### System fields (every document gets these)
+
+The internal `SystemFieldsContentIndexer` writes the following fields on every indexed item. All field names are defined in `Constants.FieldNames` and are prefixed `Umb_`:
+
+| Field name | Type | Contains |
+|---|---|---|
+| `Umb_Id` | Keyword | The content `Key` (Guid) |
+| `Umb_ParentId` | Keyword | Parent `Key` (Guid); `Guid.Empty` for root items; recycle bin key if trashed |
+| `Umb_PathIds` | Keywords (multi-value) | All ancestor keys + the item's own key — the full path as Guids |
+| `Umb_ContentTypeId` | Keyword | The content type's `Key` (Guid) |
+| `Umb_CreateDate` | DateTimeOffset | Creation date |
+| `Umb_UpdateDate` | DateTimeOffset | Last updated date |
+| `Umb_Level` | Integer | Depth in the content tree |
+| `Umb_SortOrder` | Integer | Sort order among siblings |
+| `Umb_ObjectType` | Keyword | `"Document"`, `"Media"`, or `"Member"` |
+| `Umb_Name` | TextsR1 (per culture) | Content name — indexed as highest-rank full-text so it scores higher in relevance |
+| `Umb_Tags` | Keywords (per culture) | Any Umbraco tags assigned to the item |
+
+> **All IDs are stored as Guids (Keywords), not integers.** Classic Examine stored `parentID` as an integer. The new system uses Guid keys throughout, so filters on these fields must use Guid strings.
+
+---
+
+### Property value fields
+
+The internal `PropertyValueFieldsContentIndexer` then iterates every property on the content item and adds its value using the matching `IPropertyValueHandler` for that property editor. The built-in handlers cover:
+
+- Plain strings, keyword strings, rich text, markdown, labels
+- Integers, decimals, booleans, date/times
+- Block List, Block Grid, Block Editor
+- Content picker, multi-node tree picker, multi-URL picker
+- Tags
+
+**Sensitive member properties are automatically excluded** — the indexer checks `IMemberType.IsSensitiveProperty()` and skips those fields entirely.
+
+If no handler is registered for a property editor alias, a debug log message is written and the property is skipped silently.
+
+---
+
+### The `DisableDefaultExamineIndexes()` escape hatch
+
+If the new search stack is powering everything (front-end search, back-office search, and the Delivery API), you can stop Umbraco maintaining its own legacy Examine indexes by calling:
+
+```csharp
+builder.DisableDefaultExamineIndexes();
+```
+
+This replaces `IExamineManager` with `MaskedCoreIndexesExamineManager`, which hides the old built-in indexes from Examine's index list. Only do this when you are certain nothing else depends on the classic indexes.
+
+---
+
 ## How can I see what the index looks like so I can check the indexed values?
 
 There are several ways, depending on which provider you are using.
