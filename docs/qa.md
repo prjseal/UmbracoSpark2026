@@ -16,7 +16,7 @@ It is a provider-agnostic search abstraction layer introduced in **Umbraco 17**.
 |---------|---------|
 | `Umbraco.Cms.Search.Core` | Core abstractions — always required |
 | `Umbraco.Cms.Search.Provider.Examine` | Lucene/Examine (on-disk) provider |
-| `Umbraco.Cms.Search.BackOffice` | Back-office UI for index management (optional) |
+| `Umbraco.Cms.Search.BackOffice` | Replaces the back-office global search bar with the new Search API (optional) |
 | `Kjac.SearchProvider.Elasticsearch` | Community Elasticsearch provider (optional) |
 
 ---
@@ -410,36 +410,14 @@ There are several ways, depending on which provider you are using.
 
 ---
 
-### Option 1 — Umbraco Back-office Search management UI
+### Option 1 — Examine Management dashboard (Examine provider)
 
-The `Umbraco.Cms.Search.Core.Client` package (included as part of the search stack) ships a front-end bundle via `App_Plugins` that registers a **Search** menu item inside the **Settings → Advanced** section of the back-office. It shows a collection view of all registered indexes and lets you browse documents and their stored fields.
+The classic **Examine Management** dashboard is available under **Settings → Examine Management** and is the quickest way to inspect what is actually in a Lucene index. It lets you:
+- List all registered indexes
+- Run ad-hoc queries against an index
+- Click through to individual documents and see every stored field and its value
 
-**To enable it, you must call `.AddBackOfficeSearch()` explicitly in your composer** — it is not auto-registered:
-
-```csharp
-public sealed class SiteComposer : IComposer
-{
-    public void Compose(IUmbracoBuilder builder)
-        => builder
-            .AddSearchCore()
-            .AddExamineSearchProvider()
-            .AddBackOfficeSearch();   // ← required
-}
-```
-
-The using for the extension method is:
-```csharp
-using Umbraco.Cms.Search.BackOffice.DependencyInjection;
-```
-
-Once registered, navigate to **Settings → Advanced → Search** in the back-office. You will see an index collection view (URL path: `/settings/indexes`) with all registered indexes listed. Click an index to inspect its documents and fields.
-
-`AddBackOfficeSearch()` also registers three services that power the back-office's own search bar (the global search used to find content and media in the back-office):
-- `IIndexedEntitySearchService`
-- `IContentSearchService`
-- `IMediaSearchService`
-
-For Examine specifically, the classic **Examine Management** dashboard is still available under **Settings → Examine Management** and remains a quick way to run ad-hoc queries and inspect raw Lucene documents.
+This works without any extra packages — it ships with Umbraco.
 
 ---
 
