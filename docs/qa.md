@@ -483,6 +483,8 @@ This replaces `IExamineManager` with `MaskedCoreIndexesExamineManager`, which hi
 
 Boosting in the Examine provider is controlled at **index time**, not at query time. There is no boost parameter on `SearchAsync`. Instead, you choose which text relevance tier you write a value into, and the searcher automatically applies a configured multiplier to that tier when scoring results.
 
+This is a significant shift from classic Examine, where boosting was applied **at query time** using `.Boost()` on the query builder.
+
 ---
 
 ### The four text tiers
@@ -502,43 +504,116 @@ By default, `Umb_Name` (the content name) is indexed as `TextsR1` — so a name 
 
 ---
 
-### Boosting by writing to a higher tier
+### Boosting a specific field
 
-To make a specific field score higher, write it into `TextsR1`, `TextsR2`, or `TextsR3` instead of plain `Texts`. This works in both `IContentIndexer` and `ContentIndexingNotification`:
+**Classic Examine — query time**
+
+In classic Examine, boosting was applied per-field in the query, not at index time:
 
 ```csharp
-// article title — boost heavily (R1, same tier as content name)
-new IndexField("title",    new IndexValue { TextsR1 = [content.Name] },        null, null),
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    var results = searcher.CreateQuery("content")
+        .Field("nodeName", searchTerm).Boost(6.0f)
+        .Or()
+        .Field("summary", searchTerm).Boost(3.0f)
+        .Or()
+        .Field("bodyText", searchTerm)
+        .Execute();
+}
+```
 
-// article summary — medium boost
-new IndexField("summary",  new IndexValue { TextsR2 = [summary] },             null, null),
+Every search query had to repeat the boost values. If you forgot to add `.Boost()` somewhere, that query silently returned unboosted results.
 
-// article body — no boost, just searchable
-new IndexField("body",     new IndexValue { Texts   = [bodyText] },            null, null),
+**New Umbraco Search — index time**
+
+Write the value into the appropriate tier once when indexing. Every future query automatically respects it:
+
+```csharp
+// in your IContentIndexer
+return Task.FromResult<IEnumerable<IndexField>>([
+    new IndexField("title",   new IndexValue { TextsR1 = [title] },   null, null),
+    new IndexField("summary", new IndexValue { TextsR2 = [summary] }, null, null),
+    new IndexField("body",    new IndexValue { Texts   = [body] },    null, null),
+]);
 ```
 
 ---
 
 ### Boosting by content type
 
-There is no per-content-type boost switch. To give one content type higher relevance than another, write its key fields into a higher tier. For example, to make "news" articles rank above "blog posts" for the same term, index the news headline as `TextsR1` and the blog headline as `TextsR2`:
+**Classic Examine — query time**
+
+You had to build a separate boosted sub-query per content type and combine them:
+
+```csharp
+var query = searcher.CreateQuery("content");
+var results = query
+    .Field("__NodeTypeAlias", "newsArticle").And().Field("nodeName", searchTerm).Boost(6.0f)
+    .Or()
+    .Field("__NodeTypeAlias", "blogPost").And().Field("nodeName", searchTerm).Boost(2.0f)
+    .Execute();
+```
+
+**New Umbraco Search — index time**
+
+Check the content type alias in your `IContentIndexer` and write the name into the appropriate tier:
 
 ```csharp
 public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(
     IContentBase content, string?[] cultures, bool published, CancellationToken ct)
 {
-    var tier = content.ContentType.Alias switch
-    {
-        "newsArticle" => (string[]? r1, string[]? r2) => new IndexValue { TextsR1 = r1 },
-        "blogPost"    => (string[]? r1, string[]? r2) => new IndexValue { TextsR2 = r1 },
-        _             => (string[]? r1, string[]? r2) => new IndexValue { Texts   = r1 },
-    };
-
     var name = cultures.Select(c => content.GetCultureName(c))
                        .OfType<string>().ToArray();
 
+    var value = content.ContentType.Alias switch
+    {
+        "newsArticle" => new IndexValue { TextsR1 = name },  // ranks highest
+        "blogPost"    => new IndexValue { TextsR2 = name },  // ranks second
+        _             => new IndexValue { Texts   = name },  // no boost
+    };
+
     return Task.FromResult<IEnumerable<IndexField>>([
-        new IndexField("boostedName", tier(name, null), null, null)
+        new IndexField("boostedName", value, null, null)
+    ]);
+}
+```
+
+---
+
+### Boosting by property value (e.g. a "featured" flag)
+
+**Classic Examine — query time**
+
+You had to filter and re-query to separate featured content, or use a `FunctionQuery` workaround:
+
+```csharp
+// no clean way — typically you'd just sort featured items first with a secondary query
+var featured = searcher.CreateQuery()
+    .Field("featured", "1").And().Field("nodeName", searchTerm).Boost(5.0f).Execute();
+var normal   = searcher.CreateQuery()
+    .Field("featured", "0").And().Field("nodeName", searchTerm).Execute();
+// then merge the two result sets manually
+```
+
+**New Umbraco Search — index time**
+
+Check the property value in your `IContentIndexer` and choose the tier accordingly:
+
+```csharp
+public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(
+    IContentBase content, string?[] cultures, bool published, CancellationToken ct)
+{
+    var isFeatured = content.GetValue<bool>("featured");
+    var name = cultures.Select(c => content.GetCultureName(c))
+                       .OfType<string>().ToArray();
+
+    var value = isFeatured
+        ? new IndexValue { TextsR1 = name }   // featured: scores 6×
+        : new IndexValue { TextsR2 = name };  // normal: scores 4×
+
+    return Task.FromResult<IEnumerable<IndexField>>([
+        new IndexField("boostedName", value, null, null)
     ]);
 }
 ```
@@ -547,12 +622,18 @@ public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(
 
 ### Changing the boost multipliers globally
 
-The default factors (6 / 4 / 2 / 1) can be overridden via `SearcherOptions`:
+**Classic Examine**
+
+There was no central place to configure query-time boost values — they were scattered across every query in your codebase.
+
+**New Umbraco Search**
+
+Override the defaults once in your composer via `SearcherOptions`:
 
 ```csharp
 builder.Services.Configure<SearcherOptions>(options =>
 {
-    options.BoostFactorTextR1 = 10.0f;  // name matches score 10×
+    options.BoostFactorTextR1 = 10.0f;
     options.BoostFactorTextR2 = 5.0f;
     options.BoostFactorTextR3 = 2.0f;
     // Texts is always 1.0 — not configurable
