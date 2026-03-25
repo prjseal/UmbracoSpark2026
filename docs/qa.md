@@ -700,6 +700,186 @@ Watch the official Umbraco Search docs — this is a known gap in the beta and m
 
 ---
 
+## How can I search for exact phrases in quotes, like `"Paul Seal" Umbraco`?
+
+**Short answer: the new API has no built-in quote/phrase parsing.** This is another genuine gap in the current beta.
+
+---
+
+### What phrase search means and how classic Examine handled it
+
+Phrase search treats a quoted string as an ordered sequence of adjacent tokens. A query for `"Paul Seal"` only matches documents where "Paul" is immediately followed by "Seal" — not documents that contain both words somewhere in the text.
+
+**Classic Examine — ManagedQuery with Lucene syntax**
+
+In classic Examine you could pass Lucene query syntax directly:
+
+```csharp
+// classic Examine — quoted phrase + unquoted term
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    // Lucene query syntax: quoted phrase AND separate term
+    var results = searcher.CreateQuery()
+        .ManagedQuery("\"Paul Seal\" Umbraco")
+        .Execute();
+}
+```
+
+`ManagedQuery` passed the string directly to Lucene's query parser, which interpreted quotes as phrase queries automatically. Simple and familiar to anyone who knows Lucene query syntax.
+
+---
+
+### Why the new API can't do this directly
+
+`SearchAsync` splits the query on spaces and ANDs each space-separated token. Quotes are not parsed — `"Paul Seal"` would be treated as two tokens `"Paul` and `Seal"` (including the quote characters), which will match nothing.
+
+There is also no `PhraseFilter` type. The `TextFilter` type uses `Examineness.Explicit` under the hood, which looks for an exact single token — so passing `"Paul Seal"` as a `TextFilter` value would search for the unsplit string `"paul seal"` as one token, which will never match a tokenised text field.
+
+True phrase matching requires Lucene's `PhraseQuery`, which searches for adjacent tokens. This is not currently exposed through the search API's abstractions.
+
+---
+
+### Workaround — parse the query yourself and use a custom `PhraseFilter`
+
+The cleanest approach uses the `protected virtual AddCustomFilter` extension point on the `Searcher` class. Define a custom filter type, subclass `Searcher` to handle it, then parse the user's query before calling `SearchAsync`.
+
+**Step 1 — define the custom filter type**
+
+```csharp
+// a filter that performs a Lucene PhraseQuery on the aggregated text fields
+public record PhraseFilter(string Phrase) : Filter("__phrase__", negate: false);
+```
+
+**Step 2 — subclass `Searcher` to handle it**
+
+```csharp
+using Examine;
+using Examine.Lucene.Search;
+using Lucene.Net.Index;
+using Lucene.Net.Search;
+
+public class PhraseSupportingSearcher : Searcher
+{
+    public PhraseSupportingSearcher(
+        IExamineManager examineManager,
+        IOptions<SearcherOptions> searcherOptions,
+        IActiveIndexManager activeIndexManager)
+        : base(examineManager, searcherOptions, activeIndexManager) { }
+
+    protected override void AddCustomFilter(
+        IBooleanOperation searchQuery,
+        Filter filter,
+        string? culture,
+        string? segment)
+    {
+        if (filter is not PhraseFilter phraseFilter)
+            return;
+
+        // build a Lucene PhraseQuery against the aggregated text fields
+        var tokens = phraseFilter.Phrase
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        // search across all four aggregated text tiers
+        var fields = new[]
+        {
+            Constants.SystemFields.AggregatedTextsR1,
+            Constants.SystemFields.AggregatedTextsR2,
+            Constants.SystemFields.AggregatedTextsR3,
+            Constants.SystemFields.AggregatedTexts,
+        };
+
+        // wrap in a LuceneSearchQuery to get access to the raw Lucene query
+        if (searchQuery is not LuceneSearchQuery luceneQuery)
+            return;
+
+        var boolQuery = new BooleanQuery();
+        foreach (var field in fields)
+        {
+            var phraseQuery = new PhraseQuery();
+            foreach (var token in tokens)
+                phraseQuery.Add(new Term(field, token.ToLowerInvariant()));
+
+            boolQuery.Add(phraseQuery, Occur.SHOULD);
+        }
+
+        luceneQuery.LuceneQuery.Add(boolQuery, Occur.MUST);
+    }
+}
+```
+
+**Step 3 — register the subclass**
+
+```csharp
+// in your composer, replace the default IExamineSearcher and ISearcher
+builder.Services.AddTransient<IExamineSearcher, PhraseSupportingSearcher>();
+builder.Services.AddTransient<ISearcher, PhraseSupportingSearcher>();
+```
+
+**Step 4 — parse the query in your controller**
+
+Parse the user's input to extract quoted phrases and unquoted terms, then pass them separately:
+
+```csharp
+private static (string? freeTextQuery, IEnumerable<Filter> phraseFilters) ParseQuery(string raw)
+{
+    var phraseFilters = new List<Filter>();
+    var remaining     = raw;
+
+    // extract all "quoted phrases"
+    var matches = Regex.Matches(raw, "\"([^\"]+)\"");
+    foreach (Match match in matches)
+    {
+        phraseFilters.Add(new PhraseFilter(match.Groups[1].Value));
+        remaining = remaining.Replace(match.Value, "").Trim();
+    }
+
+    // whatever is left are unquoted terms — pass as the normal query
+    var freeText = string.IsNullOrWhiteSpace(remaining) ? null : remaining.Trim();
+    return (freeText, phraseFilters);
+}
+
+// in your action:
+var (freeText, phraseFilters) = ParseQuery(userInput);  // "Paul Seal" Umbraco
+// freeText      = "Umbraco"
+// phraseFilters = [PhraseFilter("Paul Seal")]
+
+var result = await searcher.SearchAsync(
+    indexAlias:    indexAlias,
+    query:         freeText,           // ANDed token search
+    filters:       phraseFilters,      // phrase filter handled by AddCustomFilter
+    facets:        null,
+    sorters:       null,
+    skip:          0,
+    take:          10);
+```
+
+> **Note:** `LuceneSearchQuery` is an internal Examine type — check the Examine source for whether it is accessible in your target version. If it is not, an alternative is to bypass `SearchAsync` for phrase-only queries and call the Examine/Lucene index directly via `IExamineManager`, then union the result IDs with a separate `SearchAsync` call for the unquoted terms.
+
+---
+
+### Alternative — `KeywordFilter` for known fields (simpler, limited)
+
+If the field you care about is indexed as `Keywords` (e.g. an author name stored as a keyword), `KeywordFilter` already does exact whole-value matching:
+
+```csharp
+// works only if "authorName" is indexed as Keywords, not Texts
+new KeywordFilter("authorName", ["Paul Seal"], negate: false)
+```
+
+This is not phrase search across arbitrary text, but it is exact-match and works out of the box. Useful when you know the field and it is keyword-indexed.
+
+---
+
+### Summary
+
+| Capability | Classic Examine | New Umbraco Search |
+|---|---|---|
+| Quoted phrase in free-text query | ✅ `ManagedQuery("\"Paul Seal\"")` | ❌ No built-in support |
+| Exact value on keyword field | ✅ | ✅ `KeywordFilter` |
+| Custom phrase filter via extension point | N/A | 🔧 `AddCustomFilter` + `PhraseFilter` subclass |
+
+---
+
 ## How can I boost search results based on content type, property values, or other attributes?
 
 Boosting in the Examine provider is controlled at **index time**, not at query time. There is no boost parameter on `SearchAsync`. Instead, you choose which text relevance tier you write a value into, and the searcher automatically applies a configured multiplier to that tier when scoring results.
