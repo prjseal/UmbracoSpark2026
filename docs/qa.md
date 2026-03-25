@@ -410,16 +410,36 @@ There are several ways, depending on which provider you are using.
 
 ---
 
-### Option 1 — Umbraco Back-office (both providers)
+### Option 1 — Umbraco Back-office Search management UI
 
-If you have the `Umbraco.Cms.Search.BackOffice` package installed, a search management section appears in the back office that lets you browse indexes and inspect individual documents using the new API's own abstractions.
+The `Umbraco.Cms.Search.Core.Client` package (included as part of the search stack) ships a front-end bundle via `App_Plugins` that registers a **Search** menu item inside the **Settings → Advanced** section of the back-office. It shows a collection view of all registered indexes and lets you browse documents and their stored fields.
 
-For Examine specifically, the classic **Examine Management** dashboard is still available under **Settings → Examine Management**. It lets you:
-- List all registered indexes
-- Run ad-hoc queries against an index
-- Click through to individual documents and see every stored field and its value
+**To enable it, you must call `.AddBackOfficeSearch()` explicitly in your composer** — it is not auto-registered:
 
-This is usually the fastest way to confirm that a custom field (like `mainContent` or `rating`) is actually being written into the index.
+```csharp
+public sealed class SiteComposer : IComposer
+{
+    public void Compose(IUmbracoBuilder builder)
+        => builder
+            .AddSearchCore()
+            .AddExamineSearchProvider()
+            .AddBackOfficeSearch();   // ← required
+}
+```
+
+The using for the extension method is:
+```csharp
+using Umbraco.Cms.Search.BackOffice.DependencyInjection;
+```
+
+Once registered, navigate to **Settings → Advanced → Search** in the back-office. You will see an index collection view (URL path: `/settings/indexes`) with all registered indexes listed. Click an index to inspect its documents and fields.
+
+`AddBackOfficeSearch()` also registers three services that power the back-office's own search bar (the global search used to find content and media in the back-office):
+- `IIndexedEntitySearchService`
+- `IContentSearchService`
+- `IMediaSearchService`
+
+For Examine specifically, the classic **Examine Management** dashboard is still available under **Settings → Examine Management** and remains a quick way to run ad-hoc queries and inspect raw Lucene documents.
 
 ---
 
