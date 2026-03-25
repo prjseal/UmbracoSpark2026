@@ -527,28 +527,157 @@ A similarity of `0.8f` means 80% of characters must match — so a one-character
 
 ### New Umbraco Search — current workarounds
 
-**Option 1 — Subclass `Searcher` (Examine only)**
+**Important correction on multi-term AND semantics**
 
-The `Searcher` class is `public` and exposes `virtual` extension points. You can subclass it and override `CreateAggregatedTextQuery`-equivalent behaviour by registering a custom searcher. This is not officially documented for this purpose, and the API may change in future betas.
+`SearchAsync` splits the query on spaces and **ANDs** each term together (from the source: `searchQuery.And().Group(...)` per term). This means passing `"pasta psata"` requires documents to contain both words simultaneously — the opposite of what you want. Workarounds must operate on each term individually, not expand the full query string.
 
-**Option 2 — Pre-process the query string**
+---
 
-Expand the query before passing it to `SearchAsync` using a phonetic or edit-distance library (e.g. `FuzzySharp`) to generate candidate terms, then pass them as a multi-term query:
+**Option 1 — Correct the query at the call site (simplest)**
+
+The most practical approach: spell-correct the query in your controller or service before passing it to `SearchAsync`. This requires no DI changes and works with any spell-checking library.
+
+Using `WeCantSpell.Hunspell` (NuGet):
 
 ```csharp
-// rough sketch — not production code
-var candidateTerms = FuzzyMatcher.GetCandidates(userQuery, threshold: 80);
-var expandedQuery = string.Join(" ", candidateTerms);
+// install: dotnet add package WeCantSpell.Hunspell
 
-var result = await searcher.SearchAsync(
-    indexAlias, expandedQuery, filters, facets, sorters, skip: 0, take: 10);
+public class RecipeSearchController : UmbracoApiController
+{
+    private readonly ISearcherResolver _searcherResolver;
+    private readonly WordList _dictionary;
+
+    public RecipeSearchController(ISearcherResolver searcherResolver)
+    {
+        _searcherResolver = searcherResolver;
+        // load once — dictionary files ship with the package or can be downloaded
+        using var affStream  = File.OpenRead("en_GB.aff");
+        using var dictStream = File.OpenRead("en_GB.dic");
+        _dictionary = WordList.CreateFromStreams(affStream, dictStream);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Search(string query)
+    {
+        var correctedQuery = CorrectQuery(query);
+
+        var searcher = _searcherResolver.GetRequiredSearcher(
+            SearchConstants.IndexAliases.PublishedContent);
+
+        var result = await searcher.SearchAsync(
+            SearchConstants.IndexAliases.PublishedContent,
+            correctedQuery,
+            filters: null, facets: null, sorters: null,
+            skip: 0, take: 10);
+
+        return Ok(result);
+    }
+
+    private string CorrectQuery(string query)
+    {
+        // correct each term individually, then rejoin — preserves AND semantics
+        var terms = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var corrected = terms.Select(term =>
+        {
+            if (_dictionary.Check(term))
+                return term;  // already correct
+
+            var suggestions = _dictionary.Suggest(term);
+            return suggestions.FirstOrDefault() ?? term;  // best suggestion, or original
+        });
+        return string.Join(' ', corrected);
+    }
+}
 ```
 
-This works because `SearchAsync` splits the query on spaces and ORs each term against the aggregated text fields. Feeding in several phonetically similar terms gives similar results to fuzzy matching.
+The dictionary files (`en_GB.aff` / `en_GB.dic`) are standard Hunspell format — the same files used by LibreOffice and Firefox, freely available for most languages.
 
-**Option 3 — Use Elasticsearch**
+---
 
-Elasticsearch has first-class fuzzy query support (`fuzziness: AUTO`) built into its query DSL. If typo-tolerance is important, switching to the Elasticsearch provider gives you this without workarounds.
+**Option 2 — Decorator around `ISearcher` (cleaner separation of concerns)**
+
+If you want spell-correction to apply to every search automatically without touching each controller, wrap `ISearcher` with a decorator. Because `ISearcher` is registered as transient, you replace it in DI:
+
+```csharp
+// the decorator
+public class SpellCorrectingSearcher : ISearcher
+{
+    private readonly Searcher _inner;
+    private readonly WordList _dictionary;
+
+    public SpellCorrectingSearcher(Searcher inner, WordList dictionary)
+    {
+        _inner      = inner;
+        _dictionary = dictionary;
+    }
+
+    public Task<SearchResult> SearchAsync(
+        string indexAlias, string? query,
+        IEnumerable<Filter>? filters, IEnumerable<Facet>? facets,
+        IEnumerable<Sorter>? sorters, string? culture, string? segment,
+        AccessContext? accessContext, int skip, int take, int maxSuggestions = 0)
+    {
+        var correctedQuery = query is null ? null : CorrectQuery(query);
+        return _inner.SearchAsync(
+            indexAlias, correctedQuery,
+            filters, facets, sorters,
+            culture, segment, accessContext,
+            skip, take, maxSuggestions);
+    }
+
+    private string CorrectQuery(string query)
+    {
+        var terms = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var corrected = terms.Select(term =>
+            _dictionary.Check(term)
+                ? term
+                : _dictionary.Suggest(term).FirstOrDefault() ?? term);
+        return string.Join(' ', corrected);
+    }
+}
+```
+
+Register it in your composer, replacing the default `ISearcher`:
+
+```csharp
+// register the Hunspell dictionary as a singleton
+builder.Services.AddSingleton<WordList>(_ =>
+{
+    using var affStream  = File.OpenRead("en_GB.aff");
+    using var dictStream = File.OpenRead("en_GB.dic");
+    return WordList.CreateFromStreams(affStream, dictStream);
+});
+
+// register the concrete Searcher so the decorator can inject it directly
+builder.Services.AddTransient<Searcher>();
+
+// replace the default ISearcher registration with the decorator
+builder.Services.AddTransient<ISearcher, SpellCorrectingSearcher>();
+```
+
+> **Note:** This replaces `ISearcher` globally for the Examine provider. If you are running both Examine and Elasticsearch providers, `IExamineSearcher` and `IElasticsearchSearcher` are separate registrations and are not affected.
+
+---
+
+**Option 3 — Use Elasticsearch (native fuzzy support)**
+
+Elasticsearch supports `fuzziness: AUTO` natively in its query DSL, which handles edit-distance matching without any spelling library. The Elasticsearch provider (`Kjac.SearchProvider.Elasticsearch`) wraps the official Elastic client.
+
+The standard `SearchAsync` call is identical — no code changes needed on the search side:
+
+```csharp
+// same call as Examine — provider is selected by index alias
+var searcher = _searcherResolver.GetRequiredSearcher(
+    SiteConstants.IndexAliases.CustomIndexElasticsearch);
+
+var result = await searcher.SearchAsync(
+    SiteConstants.IndexAliases.CustomIndexElasticsearch,
+    query: "psata",   // Elasticsearch will fuzzy-match this to "pasta"
+    filters: null, facets: null, sorters: null,
+    skip: 0, take: 10);
+```
+
+Whether and how `fuzziness: AUTO` is enabled depends on the `Kjac.SearchProvider.Elasticsearch` package's configuration — check its documentation for query options. The key point is that the Elasticsearch query engine handles fuzzy matching at the cluster level, so the new Search API abstraction does not need to do anything special.
 
 ---
 
