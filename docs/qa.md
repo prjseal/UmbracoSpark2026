@@ -479,6 +479,98 @@ This replaces `IExamineManager` with `MaskedCoreIndexesExamineManager`, which hi
 
 ---
 
+## How do you control the level of fuzzy search?
+
+**Short answer: the new API does not expose fuzzy (edit-distance) search controls.** This is a genuine limitation of the current beta.
+
+---
+
+### What "fuzzy" means and what the new API actually does
+
+True fuzzy search uses edit-distance (Levenshtein distance) — a query for "psata" still matches "pasta" because they are one character substitution apart. This is different from wildcard/prefix matching, which only catches suffixes.
+
+Reading `Searcher.cs` directly, the free-text query for each space-separated term does exactly two things in Lucene:
+
+```csharp
+// 1. exact term match, with boost
+.Field(Constants.SystemFields.AggregatedTextsR1, term.Boost(SearcherOptions.BoostFactorTextR1))
+
+// 2. wildcard suffix match — term* — catches "pasta" when you type "past"
+.Field(Constants.SystemFields.AggregatedTextsR1, term.MultipleCharacterWildcard())
+```
+
+`MultipleCharacterWildcard()` appends `*` to the term, so "past" matches "pasta", "pastry", "pastime" etc. That is the only "fuzzy-like" behaviour built in. Typos like "psata" will **not** match "pasta".
+
+There are no fuzzy settings in `SearcherOptions` or `ExamineSearchProviderSettings`. There is no fuzziness parameter on `SearchAsync`.
+
+---
+
+### Classic Examine — how you did it before
+
+Classic Examine exposed `.Fuzzy()` directly on the query builder, with an optional similarity float (0.0–1.0, where lower = more permissive):
+
+```csharp
+// classic Examine — edit-distance fuzzy, similarity 0.8
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    var results = searcher.CreateQuery()
+        .Field("nodeName", searchTerm.Fuzzy(0.8f))
+        .Or()
+        .Field("bodyText", searchTerm.Fuzzy(0.6f))
+        .Execute();
+}
+```
+
+A similarity of `0.8f` means 80% of characters must match — so a one-character typo in a short word would still return results. `0.5f` would be more permissive, `1.0f` is exact match only.
+
+---
+
+### New Umbraco Search — current workarounds
+
+**Option 1 — Subclass `Searcher` (Examine only)**
+
+The `Searcher` class is `public` and exposes `virtual` extension points. You can subclass it and override `CreateAggregatedTextQuery`-equivalent behaviour by registering a custom searcher. This is not officially documented for this purpose, and the API may change in future betas.
+
+**Option 2 — Pre-process the query string**
+
+Expand the query before passing it to `SearchAsync` using a phonetic or edit-distance library (e.g. `FuzzySharp`) to generate candidate terms, then pass them as a multi-term query:
+
+```csharp
+// rough sketch — not production code
+var candidateTerms = FuzzyMatcher.GetCandidates(userQuery, threshold: 80);
+var expandedQuery = string.Join(" ", candidateTerms);
+
+var result = await searcher.SearchAsync(
+    indexAlias, expandedQuery, filters, facets, sorters, skip: 0, take: 10);
+```
+
+This works because `SearchAsync` splits the query on spaces and ORs each term against the aggregated text fields. Feeding in several phonetically similar terms gives similar results to fuzzy matching.
+
+**Option 3 — Use Elasticsearch**
+
+Elasticsearch has first-class fuzzy query support (`fuzziness: AUTO`) built into its query DSL. If typo-tolerance is important, switching to the Elasticsearch provider gives you this without workarounds.
+
+---
+
+### The `maxSuggestions` parameter
+
+`SearchAsync` accepts a `maxSuggestions` parameter. The base `Searcher` implementation returns an empty list — `GetSuggestionsAsync` is a `virtual` method intended for providers to override with autocomplete/did-you-mean behaviour. At the time of writing it is not implemented in the Examine provider.
+
+---
+
+### Summary
+
+| Capability | Classic Examine | New Umbraco Search (Examine) |
+|---|---|---|
+| Wildcard suffix (`past*`) | ✅ `.MultipleCharacterWildcard()` | ✅ Built in automatically |
+| Edit-distance fuzzy (`psata` → `pasta`) | ✅ `.Fuzzy(0.8f)` | ❌ Not available |
+| Configurable fuzziness level | ✅ 0.0–1.0 float | ❌ No setting |
+| Suggestions / did-you-mean | ❌ Manual | 🔲 `maxSuggestions` param — not yet implemented in Examine provider |
+
+Watch the official Umbraco Search docs — this is a known gap in the beta and may be addressed in a future release.
+
+---
+
 ## How can I boost search results based on content type, property values, or other attributes?
 
 Boosting in the Examine provider is controlled at **index time**, not at query time. There is no boost parameter on `SearchAsync`. Instead, you choose which text relevance tier you write a value into, and the searcher automatically applies a configured multiplier to that tier when scoring results.
