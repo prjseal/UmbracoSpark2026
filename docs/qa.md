@@ -479,6 +479,106 @@ This replaces `IExamineManager` with `MaskedCoreIndexesExamineManager`, which hi
 
 ---
 
+## How can I boost search results based on content type, property values, or other attributes?
+
+Boosting in the Examine provider is controlled at **index time**, not at query time. There is no boost parameter on `SearchAsync`. Instead, you choose which text relevance tier you write a value into, and the searcher automatically applies a configured multiplier to that tier when scoring results.
+
+---
+
+### The four text tiers
+
+`IndexValue` exposes four text properties, ranked highest to lowest:
+
+| Property | Default boost factor | System aggregated field |
+|---|---|---|
+| `TextsR1` | **6.0** | `Sys_aggregated_textsr1` |
+| `TextsR2` | **4.0** | `Sys_aggregated_textsr2` |
+| `TextsR3` | **2.0** | `Sys_aggregated_textsr3` |
+| `Texts` | **1.0** (no boost) | `Sys_aggregated_texts` |
+
+When content is indexed, the search system aggregates all values across all fields into these four system fields. When a free-text query runs, it searches all four aggregated fields simultaneously and multiplies each match score by the corresponding factor.
+
+By default, `Umb_Name` (the content name) is indexed as `TextsR1` — so a name match scores 6× higher than a match in plain body text.
+
+---
+
+### Boosting by writing to a higher tier
+
+To make a specific field score higher, write it into `TextsR1`, `TextsR2`, or `TextsR3` instead of plain `Texts`. This works in both `IContentIndexer` and `ContentIndexingNotification`:
+
+```csharp
+// article title — boost heavily (R1, same tier as content name)
+new IndexField("title",    new IndexValue { TextsR1 = [content.Name] },        null, null),
+
+// article summary — medium boost
+new IndexField("summary",  new IndexValue { TextsR2 = [summary] },             null, null),
+
+// article body — no boost, just searchable
+new IndexField("body",     new IndexValue { Texts   = [bodyText] },            null, null),
+```
+
+---
+
+### Boosting by content type
+
+There is no per-content-type boost switch. To give one content type higher relevance than another, write its key fields into a higher tier. For example, to make "news" articles rank above "blog posts" for the same term, index the news headline as `TextsR1` and the blog headline as `TextsR2`:
+
+```csharp
+public Task<IEnumerable<IndexField>> GetIndexFieldsAsync(
+    IContentBase content, string?[] cultures, bool published, CancellationToken ct)
+{
+    var tier = content.ContentType.Alias switch
+    {
+        "newsArticle" => (string[]? r1, string[]? r2) => new IndexValue { TextsR1 = r1 },
+        "blogPost"    => (string[]? r1, string[]? r2) => new IndexValue { TextsR2 = r1 },
+        _             => (string[]? r1, string[]? r2) => new IndexValue { Texts   = r1 },
+    };
+
+    var name = cultures.Select(c => content.GetCultureName(c))
+                       .OfType<string>().ToArray();
+
+    return Task.FromResult<IEnumerable<IndexField>>([
+        new IndexField("boostedName", tier(name, null), null, null)
+    ]);
+}
+```
+
+---
+
+### Changing the boost multipliers globally
+
+The default factors (6 / 4 / 2 / 1) can be overridden via `SearcherOptions`:
+
+```csharp
+builder.Services.Configure<SearcherOptions>(options =>
+{
+    options.BoostFactorTextR1 = 10.0f;  // name matches score 10×
+    options.BoostFactorTextR2 = 5.0f;
+    options.BoostFactorTextR3 = 2.0f;
+    // Texts is always 1.0 — not configurable
+});
+```
+
+This is the same `SearcherOptions` used for `ExpandFacetValues`.
+
+---
+
+### Known limitation: wildcard queries do not get boosted
+
+The source code explicitly notes this caveat:
+
+> "combining boost and wildcard in one query" produces no results
+
+For wildcard/partial-match queries (e.g. a user typing "umb" to match "umbraco"), boost factors are **not applied**. Only exact term matches receive the R1/R2/R3 boost. This is a known limitation of the Examine provider, not a configuration issue.
+
+---
+
+### Elasticsearch
+
+The `TextsR1`/`TextsR2`/`TextsR3` tiers are an **Examine-specific mechanism**. The Elasticsearch provider has its own scoring model. If you need field-level boosting with Elasticsearch, refer to the `Kjac.SearchProvider.Elasticsearch` package documentation.
+
+---
+
 ## How can I see what the index looks like so I can check the indexed values?
 
 There are several ways, depending on which provider you are using.
