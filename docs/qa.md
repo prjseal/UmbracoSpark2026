@@ -403,3 +403,113 @@ if (!string.IsNullOrWhiteSpace(value))
 **Culture-variant content.** If your site is multilingual, loop over the cultures provided by the notification and create a separate `IndexField` per culture, passing the culture string instead of `null` for the `Culture` parameter.
 
 ---
+
+## How can I see what the index looks like so I can check the indexed values?
+
+There are several ways, depending on which provider you are using.
+
+---
+
+### Option 1 — Umbraco Back-office (both providers)
+
+If you have the `Umbraco.Cms.Search.BackOffice` package installed, a search management section appears in the back office that lets you browse indexes and inspect individual documents using the new API's own abstractions.
+
+For Examine specifically, the classic **Examine Management** dashboard is still available under **Settings → Examine Management**. It lets you:
+- List all registered indexes
+- Run ad-hoc queries against an index
+- Click through to individual documents and see every stored field and its value
+
+This is usually the fastest way to confirm that a custom field (like `mainContent` or `rating`) is actually being written into the index.
+
+---
+
+### Option 2 — Elasticsearch REST API (Elasticsearch provider)
+
+Because Elasticsearch exposes an HTTP API, you can query it directly from any HTTP client (curl, Postman, the browser, etc.).
+
+**List all indexes:**
+```
+GET http://localhost:9200/_cat/indices?v
+```
+
+**See the field mappings for an index (what fields exist and their types):**
+```
+GET http://localhost:9200/customindexelasticsearch/_mapping
+```
+
+**Fetch the first 10 documents to inspect their stored fields:**
+```
+GET http://localhost:9200/customindexelasticsearch/_search
+{
+  "size": 10,
+  "query": { "match_all": {} }
+}
+```
+
+**Find a specific document by its Umbraco `Key` (Guid):**
+```
+GET http://localhost:9200/customindexelasticsearch/_search
+{
+  "query": {
+    "term": { "id": "9622bf04-83a8-44e1-9535-bdcc3b6066eb" }
+  }
+}
+```
+
+The index alias used in the URL is the lowercase version of the alias registered in code (Elasticsearch lowercases index names). Check `SiteConstants.IndexAliases` in the project for the exact strings.
+
+> Enable `"EnableDebugMode": true` in `appsettings.Development.json` to log the full Elasticsearch request and response payloads to the application log — invaluable when verifying what is actually being sent and stored.
+
+---
+
+### Option 3 — Kibana Dev Tools (Elasticsearch provider)
+
+If you have Kibana running alongside Elasticsearch, the **Dev Tools** console (at `http://localhost:5601/app/dev_tools`) gives you an interactive query editor with autocomplete. Paste the same queries from Option 2 directly into the console.
+
+Kibana's **Discover** view also lets you browse index documents visually and filter by field values, which is useful for confirming that a field like `mainContent` contains the text you expect.
+
+---
+
+### Option 4 — Luke (Examine / Lucene provider)
+
+[Luke](https://github.com/apache/lucene/releases) is a standalone desktop tool for inspecting Lucene indexes on disk.
+
+**Where the Examine index files live:**
+```
+/umbraco/Data/TEMP/ExamineIndexes/<IndexName>/
+```
+
+```
+umbraco/
+└── Data/
+    └── TEMP/
+        └── ExamineIndexes/
+            ├── PublishedContent/    ← default content index
+            └── ...
+```
+
+Open Luke, point it at the index folder, and you can:
+- Browse every document stored in the index
+- See all field names and their raw stored values
+- Run Lucene query syntax directly against the index
+
+> **Important:** Stop or detach the running Umbraco application before opening the index in Luke, or use Luke's read-only mode. Lucene locks its index files while a process has them open — opening with two writers simultaneously will corrupt the index.
+
+---
+
+### Quick decision guide
+
+```
+Which provider am I using?
+│
+├── Examine (Lucene)
+│   ├── App is running  →  Umbraco back-office Examine Management
+│   └── App is stopped  →  Luke (desktop tool, open index folder directly)
+│
+└── Elasticsearch
+    ├── Just checking fields/mappings  →  REST API (_mapping endpoint)
+    ├── Browsing documents             →  Kibana Discover / Dev Tools
+    └── Debugging query shapes         →  EnableDebugMode in appsettings
+```
+
+---
