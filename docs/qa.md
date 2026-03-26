@@ -1233,3 +1233,159 @@ Which provider am I using?
 ```
 
 ---
+
+## How do I implement synonym searching?
+
+The new Umbraco Search API has **no built-in synonym support**. There is no synonym configuration option in `IndexOptions`, `SearcherOptions`, or `FieldOptions`. You must implement synonyms yourself, and the right approach depends on which provider you are using and where you want to apply the expansion.
+
+---
+
+### Option 1 — Application-level query expansion (works with both providers)
+
+The simplest approach that is completely provider-agnostic: expand the user's query string into multiple terms before calling `SearchAsync`. Because the `query` parameter searches across all aggregated text fields, passing a space-separated list of synonym terms will return documents that contain any of those tokens.
+
+**Example: expand at the controller level**
+
+```csharp
+// A simple in-memory synonym map
+private static readonly Dictionary<string, string[]> Synonyms = new(StringComparer.OrdinalIgnoreCase)
+{
+    { "sofa",       ["sofa", "couch", "settee"] },
+    { "couch",      ["sofa", "couch", "settee"] },
+    { "settee",     ["sofa", "couch", "settee"] },
+    { "tv",         ["tv", "television", "telly"] },
+    { "television", ["tv", "television", "telly"] },
+};
+
+private string ExpandQuery(string input)
+{
+    var terms = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var expanded = terms.SelectMany(t =>
+        Synonyms.TryGetValue(t, out var syns) ? syns : [t]);
+    return string.Join(" ", expanded.Distinct(StringComparer.OrdinalIgnoreCase));
+}
+```
+
+```csharp
+// In your controller
+var expandedQuery = ExpandQuery(userInput);  // "couch" → "sofa couch settee"
+
+var result = await searcher.SearchAsync(
+    indexAlias: SearchConstants.IndexAliases.PublishedContent,
+    query:      expandedQuery,
+    filters:    null,
+    facets:     null,
+    sorters:    null,
+    skip:       0,
+    take:       10);
+```
+
+> **Caveat:** verify that your searcher treats multi-word queries as OR-of-tokens (most implementations do). If it uses AND, a document must contain *all* synonym terms to match — the opposite of what you want. Use Option 2 for guaranteed OR control.
+
+---
+
+### Option 2 — `AddCustomFilter` with a Lucene `BooleanQuery` (Examine provider)
+
+For precise OR-of-synonyms behaviour with the Examine provider, subclass `Searcher` and override `AddCustomFilter`, exactly as shown in the phrase-search workaround. Define a custom filter to carry the synonym group, then build a Lucene `BooleanQuery` that ORs a `TermQuery` per synonym across all aggregated text fields.
+
+**Step 1 — define the filter**
+
+```csharp
+public record SynonymFilter(string[] Terms) : Filter("__synonyms__", negate: false);
+```
+
+**Step 2 — subclass `Searcher`**
+
+```csharp
+using Examine;
+using Examine.Lucene.Search;
+using Lucene.Net.Index;
+using Lucene.Net.Search;
+
+public class SynonymSupportingSearcher : Searcher
+{
+    public SynonymSupportingSearcher(
+        IExamineManager examineManager,
+        IOptions<SearcherOptions> searcherOptions,
+        IActiveIndexManager activeIndexManager)
+        : base(examineManager, searcherOptions, activeIndexManager) { }
+
+    protected override void AddCustomFilter(
+        IBooleanOperation searchQuery,
+        Filter filter,
+        string? culture,
+        string? segment)
+    {
+        if (filter is not SynonymFilter synonymFilter)
+            return;
+
+        if (searchQuery is not LuceneSearchQuery luceneQuery)
+            return;
+
+        var fields = new[]
+        {
+            Constants.SystemFields.AggregatedTextsR1,
+            Constants.SystemFields.AggregatedTextsR2,
+            Constants.SystemFields.AggregatedTextsR3,
+            Constants.SystemFields.AggregatedTexts,
+        };
+
+        var outerBool = new BooleanQuery();  // SHOULD across fields
+        foreach (var field in fields)
+        {
+            var innerBool = new BooleanQuery();  // SHOULD across synonym terms
+            foreach (var term in synonymFilter.Terms)
+                innerBool.Add(new TermQuery(new Term(field, term.ToLowerInvariant())), Occur.SHOULD);
+
+            outerBool.Add(innerBool, Occur.SHOULD);
+        }
+
+        luceneQuery.LuceneQuery.Add(outerBool, Occur.MUST);
+    }
+}
+```
+
+**Step 3 — register**
+
+```csharp
+builder.Services.AddTransient<IExamineSearcher, SynonymSupportingSearcher>();
+builder.Services.AddTransient<ISearcher, SynonymSupportingSearcher>();
+```
+
+**Step 4 — use**
+
+```csharp
+var synonymTerms = Synonyms.TryGetValue(userInput.Trim(), out var syns)
+    ? syns
+    : [userInput.Trim()];
+
+var result = await searcher.SearchAsync(
+    indexAlias: SearchConstants.IndexAliases.PublishedContent,
+    query:      null,
+    filters:    [new SynonymFilter(synonymTerms)],
+    facets:     null,
+    sorters:    null,
+    skip:       0,
+    take:       10);
+```
+
+---
+
+### Option 3 — Elasticsearch synonym token filter (Elasticsearch provider)
+
+Elasticsearch has native synonym support via its analysis pipeline. Synonyms are configured on the index at creation time as part of a custom analyzer — the expansion happens **inside Elasticsearch itself**, not in application code. Umbraco's abstraction layer is unaware of it; you just pass a normal `query` string and Elasticsearch expands it transparently.
+
+Consult the `Kjac.SearchProvider.Elasticsearch` package documentation and Elasticsearch's [synonym token filter docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-synonym-tokenfilter.html) for how to inject a custom analyzer into the index settings before the first indexing run.
+
+---
+
+### Which approach should I use?
+
+| Scenario | Recommended approach |
+|----------|----------------------|
+| Quick to implement, provider-agnostic | Option 1 — application-level query expansion |
+| Examine provider, precise OR control | Option 2 — `AddCustomFilter` + `SynonymFilter` |
+| Elasticsearch provider, large synonym lists | Option 3 — Elasticsearch native synonym token filter |
+| Both providers simultaneously | Option 1 (works everywhere) |
+
+---
