@@ -1233,3 +1233,577 @@ Which provider am I using?
 ```
 
 ---
+
+## How do I implement synonym searching?
+
+The new Umbraco Search API has **no built-in synonym support**. There is no synonym configuration option in `IndexOptions`, `SearcherOptions`, or `FieldOptions`. You must implement synonyms yourself, and the right approach depends on which provider you are using and where you want to apply the expansion.
+
+```mermaid
+flowchart TD
+    A[User types a search term] --> B{Synonym match found?}
+    B -- No --> C[Pass term directly to SearchAsync]
+    B -- Yes --> D{Which provider?}
+    D -- Examine --> E{Need precise OR control?}
+    E -- No --> F[Option 1: expand query string\napplication-level]
+    E -- Yes --> G[Option 2: AddCustomFilter\n+ SynonymFilter]
+    D -- Elasticsearch --> H[Option 3: native synonym\ntoken filter in analyzer]
+    F --> I[SearchAsync]
+    G --> I
+    H --> I
+    C --> I
+```
+
+---
+
+### Option 1 — Application-level query expansion (works with both providers)
+
+**Before — classic Examine**
+
+In classic Examine you expanded synonyms before passing the string to `ManagedQuery`. The expanded terms are OR-ed by Lucene's standard query parser when separated by spaces (default operator is OR):
+
+```csharp
+private static readonly Dictionary<string, string[]> Synonyms = new(StringComparer.OrdinalIgnoreCase)
+{
+    { "sofa",       ["sofa", "couch", "settee"] },
+    { "couch",      ["sofa", "couch", "settee"] },
+    { "settee",     ["sofa", "couch", "settee"] },
+};
+
+private string ExpandQuery(string input)
+{
+    var terms = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+    var expanded = terms.SelectMany(t =>
+        Synonyms.TryGetValue(t, out var syns) ? syns : [t]);
+    return string.Join(" ", expanded.Distinct(StringComparer.OrdinalIgnoreCase));
+}
+
+// In the controller / search service:
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    var expandedQuery = ExpandQuery(userInput);  // "couch" → "sofa couch settee"
+    var results = searcher.CreateQuery("content")
+        .ManagedQuery(expandedQuery)             // Lucene parses as OR by default
+        .Execute();
+}
+```
+
+**After — new Umbraco Search**
+
+The dictionary and expansion helper are identical. Only the search call changes:
+
+```csharp
+var expandedQuery = ExpandQuery(userInput);  // "couch" → "sofa couch settee"
+
+var result = await searcher.SearchAsync(
+    indexAlias: SearchConstants.IndexAliases.PublishedContent,
+    query:      expandedQuery,
+    filters:    null,
+    facets:     null,
+    sorters:    null,
+    skip:       0,
+    take:       10);
+```
+
+> **Caveat:** verify that your searcher treats a multi-word `query` as OR-of-tokens (most implementations do). If it uses AND, a document must contain *all* synonym terms to match — the opposite of what you want. Use Option 2 for guaranteed OR control.
+
+---
+
+### Option 2 — `AddCustomFilter` with a Lucene `BooleanQuery` (Examine provider)
+
+**Before — classic Examine**
+
+With classic Examine you could build a `BooleanQuery` directly against the Lucene API and wrap it in a `CustomMultiFieldQueryParser` or `RawQuery`, or simply add the synonym terms as OR clauses using the fluent query builder:
+
+```csharp
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    var synonymTerms = new[] { "sofa", "couch", "settee" };
+
+    // Build an OR query across synonym terms on the nodeName field
+    var query = searcher.CreateQuery("content");
+    IBooleanOperation? boolOp = null;
+
+    foreach (var term in synonymTerms)
+    {
+        boolOp = boolOp is null
+            ? query.Field("nodeName", term)
+            : boolOp.Or().Field("nodeName", term);
+    }
+
+    var results = boolOp!.Execute();
+}
+```
+
+The limitation: you had to repeat the field name(s) manually in every query. There was no central OR-across-all-text-fields mechanism.
+
+**After — new Umbraco Search (four steps)**
+
+The new API provides the `AddCustomFilter` extension point to inject arbitrary Lucene queries, and the aggregated system fields mean you automatically cover all text tiers in one go.
+
+Step 1 — define the filter:
+
+```csharp
+public record SynonymFilter(string[] Terms) : Filter("__synonyms__", negate: false);
+```
+
+Step 2 — subclass `Searcher`:
+
+```csharp
+using Examine;
+using Examine.Lucene.Search;
+using Lucene.Net.Index;
+using Lucene.Net.Search;
+
+public class SynonymSupportingSearcher : Searcher
+{
+    public SynonymSupportingSearcher(
+        IExamineManager examineManager,
+        IOptions<SearcherOptions> searcherOptions,
+        IActiveIndexManager activeIndexManager)
+        : base(examineManager, searcherOptions, activeIndexManager) { }
+
+    protected override void AddCustomFilter(
+        IBooleanOperation searchQuery,
+        Filter filter,
+        string? culture,
+        string? segment)
+    {
+        if (filter is not SynonymFilter synonymFilter)
+            return;
+
+        if (searchQuery is not LuceneSearchQuery luceneQuery)
+            return;
+
+        // OR across all four aggregated text tiers
+        var fields = new[]
+        {
+            Constants.SystemFields.AggregatedTextsR1,
+            Constants.SystemFields.AggregatedTextsR2,
+            Constants.SystemFields.AggregatedTextsR3,
+            Constants.SystemFields.AggregatedTexts,
+        };
+
+        var outerBool = new BooleanQuery();  // SHOULD across fields
+        foreach (var field in fields)
+        {
+            var innerBool = new BooleanQuery();  // SHOULD across synonym terms
+            foreach (var term in synonymFilter.Terms)
+                innerBool.Add(new TermQuery(new Term(field, term.ToLowerInvariant())), Occur.SHOULD);
+
+            outerBool.Add(innerBool, Occur.SHOULD);
+        }
+
+        luceneQuery.LuceneQuery.Add(outerBool, Occur.MUST);
+    }
+}
+```
+
+Step 3 — register the subclass:
+
+```csharp
+builder.Services.AddTransient<IExamineSearcher, SynonymSupportingSearcher>();
+builder.Services.AddTransient<ISearcher, SynonymSupportingSearcher>();
+```
+
+Step 4 — use it in your controller:
+
+```csharp
+var synonymTerms = Synonyms.TryGetValue(userInput.Trim(), out var syns)
+    ? syns
+    : [userInput.Trim()];
+
+var result = await searcher.SearchAsync(
+    indexAlias: SearchConstants.IndexAliases.PublishedContent,
+    query:      null,
+    filters:    [new SynonymFilter(synonymTerms)],
+    facets:     null,
+    sorters:    null,
+    skip:       0,
+    take:       10);
+```
+
+```mermaid
+sequenceDiagram
+    participant C as Controller
+    participant S as SynonymSupportingSearcher
+    participant L as Lucene BooleanQuery
+
+    C->>C: Resolve synonym group<br/>["sofa","couch","settee"]
+    C->>S: SearchAsync(filters: [SynonymFilter])
+    S->>S: AddCustomFilter called
+    S->>L: Build BooleanQuery<br/>SHOULD TermQuery(AggTextsR1, "sofa")<br/>SHOULD TermQuery(AggTextsR1, "couch")<br/>SHOULD TermQuery(AggTextsR1, "settee")<br/>... repeated for R2, R3, Texts
+    L-->>S: BooleanQuery added as MUST
+    S-->>C: SearchResult
+```
+
+---
+
+### Option 3 — Elasticsearch synonym token filter (Elasticsearch provider)
+
+**Before — classic Examine**
+
+Classic Examine (Lucene) supported synonyms at the analyzer level by supplying a custom `IValueTypeFactory` that built a `PerFieldAnalyzerWrapper` including a `SynonymFilter`. This required significant Lucene boilerplate and was registered via Examine's `IndexCreated` event:
+
+```csharp
+// Classic Examine — registered in a Composer
+examineManager.IndexCreated += (sender, args) =>
+{
+    if (args.Index is not LuceneIndex luceneIndex) return;
+
+    var synonymMap = new SynonymMap.Builder();
+    synonymMap.Add(new CharsRef("couch"),  new CharsRef("sofa"),   true);
+    synonymMap.Add(new CharsRef("settee"), new CharsRef("sofa"),   true);
+    var builtMap = synonymMap.Build();
+
+    var analyzerWrapper = new PerFieldAnalyzerWrapper(
+        new StandardAnalyzer(LuceneVersion.LUCENE_48),
+        new Dictionary<string, Analyzer>
+        {
+            ["nodeName"] = new SynonymAnalyzer(builtMap)
+        });
+
+    luceneIndex.FieldAnalyzer = analyzerWrapper;
+};
+```
+
+This set up synonym expansion transparently at index and query time but was tightly coupled to internal Examine types and the specific Lucene version.
+
+**After — new Umbraco Search (Elasticsearch)**
+
+With Elasticsearch, synonyms are configured in the index settings JSON, entirely outside application code. Umbraco's abstraction layer is unaware of it — you pass a normal `query` string and Elasticsearch expands it transparently at query time.
+
+```json
+// Elasticsearch index settings (applied at index creation via Kjac.SearchProvider.Elasticsearch)
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "my_synonym_filter": {
+          "type": "synonym",
+          "synonyms": [
+            "sofa, couch, settee",
+            "tv, television, telly"
+          ]
+        }
+      },
+      "analyzer": {
+        "my_synonym_analyzer": {
+          "tokenizer": "standard",
+          "filter": ["lowercase", "my_synonym_filter"]
+        }
+      }
+    }
+  }
+}
+```
+
+Once the analyzer is wired to the relevant fields, a query for `"couch"` automatically matches documents containing `"sofa"` or `"settee"` — no application code changes needed.
+
+---
+
+### Summary
+
+| Capability | Classic Examine | New Umbraco Search |
+|---|---|---|
+| Application-level expansion | ✅ Expand before `ManagedQuery` | ✅ Expand before `SearchAsync` — identical concept |
+| Analyzer-level synonyms (Examine/Lucene) | 🔧 `SynonymFilter` in custom `PerFieldAnalyzerWrapper` via `IndexCreated` | 🔧 Same Lucene approach (still available), but less needed |
+| OR-across-all-text-fields synonym query | ❌ Manual per-field repetition | ✅ `AddCustomFilter` + `SynonymFilter` covers all aggregated tiers automatically |
+| Analyzer-level synonyms (Elasticsearch) | N/A | ✅ Native synonym token filter — zero application code |
+
+---
+
+## How do I replicate `GroupedAnd`, `GroupedOr`, and `GroupedNot` queries from classic Examine?
+
+Classic Examine exposed `.GroupedAnd()`, `.GroupedOr()`, and `.GroupedNot()` on its fluent query builder, letting you target multiple fields with a single boolean clause. The new Umbraco Search API does not have these methods. Instead it replaces them with a simpler model built on the `Filter` collection and, for cases that need more complex logic, the `AddCustomFilter` extension point.
+
+---
+
+### How the new filter model maps to classic boolean concepts
+
+```mermaid
+graph TD
+    A[Classic Examine boolean concept] --> B{What are you doing?}
+    B --> C["GroupedOr — any of these fields
+must contain this value"]
+    B --> D["GroupedAnd — all of these fields
+must contain a value"]
+    B --> E["GroupedNot — exclude docs where
+any of these fields match"]
+    B --> F["AND across separate field conditions"]
+    B --> G["OR across separate filter groups
+(e.g. field A=x OR field B=y)"]
+
+    C --> H["New: index all fields into the same
+aggregated text tier — query parameter
+automatically covers all of them"]
+    D --> I["New: multiple KeywordFilters in the
+filter list — all must match (AND)"]
+    E --> J["New: KeywordFilter with negate: true"]
+    F --> I
+    G --> K["New: AddCustomFilter with a
+Lucene BooleanQuery + Occur.SHOULD"]
+```
+
+---
+
+### Scenario 1 — `GroupedOr` (search across multiple fields, any can match)
+
+**Before — classic Examine**
+
+```csharp
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    var results = searcher.CreateQuery("content")
+        .GroupedOr(["nodeName", "bodyText", "summary"], "umbraco")
+        .Execute();
+}
+```
+
+This matched documents where `nodeName`, `bodyText`, OR `summary` contained "umbraco".
+
+**After — new Umbraco Search**
+
+You do not need `GroupedOr` for this common case. During indexing, write all searchable fields into the appropriate text tier (`TextsR1`, `TextsR2`, etc.). The searcher automatically queries all four aggregated text fields at once — a single `query` value covers every field you indexed into them:
+
+```csharp
+// At index time (in your IContentIndexer):
+return Task.FromResult<IEnumerable<IndexField>>([
+    new IndexField("nodeName",  new IndexValue { TextsR1 = [name] },    null, null),
+    new IndexField("summary",   new IndexValue { TextsR2 = [summary] }, null, null),
+    new IndexField("bodyText",  new IndexValue { Texts   = [body] },    null, null),
+]);
+
+// At query time — no GroupedOr needed:
+var result = await searcher.SearchAsync(
+    indexAlias: SearchConstants.IndexAliases.PublishedContent,
+    query:      "umbraco",   // matched against all aggregated text fields automatically
+    filters:    null,
+    facets:     null,
+    sorters:    null,
+    skip:       0,
+    take:       10);
+```
+
+If you need to target a specific non-aggregated keyword field, use `KeywordFilter` with a single value:
+
+```csharp
+new KeywordFilter("authorName", ["Paul Seal"], negate: false)
+```
+
+---
+
+### Scenario 2 — `GroupedAnd` (all conditions must match, potentially across fields)
+
+**Before — classic Examine**
+
+```csharp
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    // All three conditions must be satisfied
+    var results = searcher.CreateQuery("content")
+        .GroupedAnd(["cuisine", "mealType"], "Italian", "Lunch")
+        .Execute();
+}
+```
+
+**After — new Umbraco Search**
+
+Add each condition as a separate `Filter` in the list. All filters are AND-ed together:
+
+```csharp
+var result = await searcher.SearchAsync(
+    indexAlias: SearchConstants.IndexAliases.PublishedContent,
+    query:      null,
+    filters:
+    [
+        new KeywordFilter("cuisine",  ["Italian"], negate: false),  // AND
+        new KeywordFilter("mealType", ["Lunch"],   negate: false),  // AND
+    ],
+    facets:  null,
+    sorters: null,
+    skip:    0,
+    take:    10);
+```
+
+Multiple values within one `KeywordFilter` are OR-ed, so you can combine both concepts:
+
+```csharp
+filters:
+[
+    // cuisine must be Italian OR Mexican   (OR within one filter)
+    new KeywordFilter("cuisine",  ["Italian", "Mexican"], negate: false),
+    // AND mealType must be Lunch OR Dinner (OR within one filter)
+    new KeywordFilter("mealType", ["Lunch",   "Dinner"],  negate: false),
+]
+// net result: (Italian OR Mexican) AND (Lunch OR Dinner)
+```
+
+```mermaid
+graph LR
+    subgraph Filter 1
+        A["cuisine = Italian"] -- OR --> B["cuisine = Mexican"]
+    end
+    subgraph Filter 2
+        C["mealType = Lunch"] -- OR --> D["mealType = Dinner"]
+    end
+    Filter1 -- AND --> Filter2
+```
+
+---
+
+### Scenario 3 — `GroupedNot` (exclude documents matching a condition)
+
+**Before — classic Examine**
+
+```csharp
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    var results = searcher.CreateQuery("content")
+        .GroupedNot(["cuisine"], "FastFood")
+        .Execute();
+}
+```
+
+**After — new Umbraco Search**
+
+Set `negate: true` on the filter:
+
+```csharp
+var result = await searcher.SearchAsync(
+    indexAlias: SearchConstants.IndexAliases.PublishedContent,
+    query:      null,
+    filters:
+    [
+        // exclude FastFood AND exclude Dessert
+        new KeywordFilter("cuisine", ["FastFood", "Dessert"], negate: true),
+    ],
+    facets:  null,
+    sorters: null,
+    skip:    0,
+    take:    10);
+```
+
+Multiple negated values in one filter are all excluded (NOT FastFood AND NOT Dessert). Combine with positive filters freely — all conditions are still AND-ed:
+
+```csharp
+filters:
+[
+    new KeywordFilter("cuisine",  ["Italian"],  negate: false),  // must be Italian
+    new KeywordFilter("mealType", ["FastFood"], negate: true),   // AND must NOT be FastFood
+]
+```
+
+---
+
+### Scenario 4 — OR across separate filter groups
+
+This is the hard case: `(cuisine = Italian) OR (mealType = Lunch)` — two different fields where either condition is sufficient. The built-in filter list cannot express this directly (it always ANDs across filters). Use `AddCustomFilter` with a Lucene `BooleanQuery`.
+
+**Before — classic Examine**
+
+```csharp
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    var results = searcher.CreateQuery("content")
+        .Field("cuisine", "Italian")
+        .Or()
+        .Field("mealType", "Lunch")
+        .Execute();
+}
+```
+
+**After — new Umbraco Search (three steps)**
+
+Step 1 — define a filter to carry the OR groups:
+
+```csharp
+// Each inner array is one OR clause; the outer array is OR-ed across clauses
+public record CrossFieldOrFilter(
+    (string Field, string[] Values)[] Groups
+) : Filter("__crossfieldor__", negate: false);
+```
+
+Step 2 — subclass `Searcher`:
+
+```csharp
+using Examine;
+using Examine.Lucene.Search;
+using Lucene.Net.Index;
+using Lucene.Net.Search;
+
+public class CrossFieldOrSearcher : Searcher
+{
+    public CrossFieldOrSearcher(
+        IExamineManager examineManager,
+        IOptions<SearcherOptions> searcherOptions,
+        IActiveIndexManager activeIndexManager)
+        : base(examineManager, searcherOptions, activeIndexManager) { }
+
+    protected override void AddCustomFilter(
+        IBooleanOperation searchQuery,
+        Filter filter,
+        string? culture,
+        string? segment)
+    {
+        if (filter is not CrossFieldOrFilter orFilter)
+            return;
+
+        if (searchQuery is not LuceneSearchQuery luceneQuery)
+            return;
+
+        var outerBool = new BooleanQuery();  // OR across groups
+
+        foreach (var (field, values) in orFilter.Groups)
+        {
+            var groupBool = new BooleanQuery();  // OR across values within a group
+            foreach (var value in values)
+                groupBool.Add(new TermQuery(new Term(field, value.ToLowerInvariant())), Occur.SHOULD);
+
+            outerBool.Add(groupBool, Occur.SHOULD);
+        }
+
+        luceneQuery.LuceneQuery.Add(outerBool, Occur.MUST);
+    }
+}
+```
+
+Step 3 — register and use:
+
+```csharp
+// Composer
+builder.Services.AddTransient<IExamineSearcher, CrossFieldOrSearcher>();
+builder.Services.AddTransient<ISearcher, CrossFieldOrSearcher>();
+```
+
+```csharp
+// Controller: (cuisine = Italian OR Mexican) OR (mealType = Lunch)
+var result = await searcher.SearchAsync(
+    indexAlias: SearchConstants.IndexAliases.PublishedContent,
+    query:      null,
+    filters:
+    [
+        new CrossFieldOrFilter(
+        [
+            ("cuisine",  ["Italian", "Mexican"]),
+            ("mealType", ["Lunch"]),
+        ])
+    ],
+    facets:  null,
+    sorters: null,
+    skip:    0,
+    take:    10);
+```
+
+---
+
+### Summary
+
+| Classic Examine | New Umbraco Search equivalent |
+|---|---|
+| `.GroupedOr(fields, term)` | Index all fields into the same aggregated text tier; pass `query` to `SearchAsync` |
+| `.GroupedAnd(fields, values)` | Multiple `Filter` objects in the filter list (implicit AND) |
+| `.GroupedNot(fields, values)` | `KeywordFilter(..., negate: true)` |
+| `.Field(f, v).Or().Field(g, w)` | `AddCustomFilter` + `CrossFieldOrFilter` with a Lucene `BooleanQuery` |
+| Multiple values in one clause | Multiple values in one `Filter` constructor (implicit OR within the filter) |
+
+---
