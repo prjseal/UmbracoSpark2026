@@ -1238,23 +1238,35 @@ Which provider am I using?
 
 The new Umbraco Search API has **no built-in synonym support**. There is no synonym configuration option in `IndexOptions`, `SearcherOptions`, or `FieldOptions`. You must implement synonyms yourself, and the right approach depends on which provider you are using and where you want to apply the expansion.
 
+```mermaid
+flowchart TD
+    A[User types a search term] --> B{Synonym match found?}
+    B -- No --> C[Pass term directly to SearchAsync]
+    B -- Yes --> D{Which provider?}
+    D -- Examine --> E{Need precise OR control?}
+    E -- No --> F[Option 1: expand query string\napplication-level]
+    E -- Yes --> G[Option 2: AddCustomFilter\n+ SynonymFilter]
+    D -- Elasticsearch --> H[Option 3: native synonym\ntoken filter in analyzer]
+    F --> I[SearchAsync]
+    G --> I
+    H --> I
+    C --> I
+```
+
 ---
 
 ### Option 1 — Application-level query expansion (works with both providers)
 
-The simplest approach that is completely provider-agnostic: expand the user's query string into multiple terms before calling `SearchAsync`. Because the `query` parameter searches across all aggregated text fields, passing a space-separated list of synonym terms will return documents that contain any of those tokens.
+**Before — classic Examine**
 
-**Example: expand at the controller level**
+In classic Examine you expanded synonyms before passing the string to `ManagedQuery`. The expanded terms are OR-ed by Lucene's standard query parser when separated by spaces (default operator is OR):
 
 ```csharp
-// A simple in-memory synonym map
 private static readonly Dictionary<string, string[]> Synonyms = new(StringComparer.OrdinalIgnoreCase)
 {
     { "sofa",       ["sofa", "couch", "settee"] },
     { "couch",      ["sofa", "couch", "settee"] },
     { "settee",     ["sofa", "couch", "settee"] },
-    { "tv",         ["tv", "television", "telly"] },
-    { "television", ["tv", "television", "telly"] },
 };
 
 private string ExpandQuery(string input)
@@ -1264,10 +1276,22 @@ private string ExpandQuery(string input)
         Synonyms.TryGetValue(t, out var syns) ? syns : [t]);
     return string.Join(" ", expanded.Distinct(StringComparer.OrdinalIgnoreCase));
 }
+
+// In the controller / search service:
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    var expandedQuery = ExpandQuery(userInput);  // "couch" → "sofa couch settee"
+    var results = searcher.CreateQuery("content")
+        .ManagedQuery(expandedQuery)             // Lucene parses as OR by default
+        .Execute();
+}
 ```
 
+**After — new Umbraco Search**
+
+The dictionary and expansion helper are identical. Only the search call changes:
+
 ```csharp
-// In your controller
 var expandedQuery = ExpandQuery(userInput);  // "couch" → "sofa couch settee"
 
 var result = await searcher.SearchAsync(
@@ -1280,21 +1304,49 @@ var result = await searcher.SearchAsync(
     take:       10);
 ```
 
-> **Caveat:** verify that your searcher treats multi-word queries as OR-of-tokens (most implementations do). If it uses AND, a document must contain *all* synonym terms to match — the opposite of what you want. Use Option 2 for guaranteed OR control.
+> **Caveat:** verify that your searcher treats a multi-word `query` as OR-of-tokens (most implementations do). If it uses AND, a document must contain *all* synonym terms to match — the opposite of what you want. Use Option 2 for guaranteed OR control.
 
 ---
 
 ### Option 2 — `AddCustomFilter` with a Lucene `BooleanQuery` (Examine provider)
 
-For precise OR-of-synonyms behaviour with the Examine provider, subclass `Searcher` and override `AddCustomFilter`, exactly as shown in the phrase-search workaround. Define a custom filter to carry the synonym group, then build a Lucene `BooleanQuery` that ORs a `TermQuery` per synonym across all aggregated text fields.
+**Before — classic Examine**
 
-**Step 1 — define the filter**
+With classic Examine you could build a `BooleanQuery` directly against the Lucene API and wrap it in a `CustomMultiFieldQueryParser` or `RawQuery`, or simply add the synonym terms as OR clauses using the fluent query builder:
+
+```csharp
+if (_examineManager.TryGetSearcher("ExternalIndex", out var searcher))
+{
+    var synonymTerms = new[] { "sofa", "couch", "settee" };
+
+    // Build an OR query across synonym terms on the nodeName field
+    var query = searcher.CreateQuery("content");
+    IBooleanOperation? boolOp = null;
+
+    foreach (var term in synonymTerms)
+    {
+        boolOp = boolOp is null
+            ? query.Field("nodeName", term)
+            : boolOp.Or().Field("nodeName", term);
+    }
+
+    var results = boolOp!.Execute();
+}
+```
+
+The limitation: you had to repeat the field name(s) manually in every query. There was no central OR-across-all-text-fields mechanism.
+
+**After — new Umbraco Search (four steps)**
+
+The new API provides the `AddCustomFilter` extension point to inject arbitrary Lucene queries, and the aggregated system fields mean you automatically cover all text tiers in one go.
+
+Step 1 — define the filter:
 
 ```csharp
 public record SynonymFilter(string[] Terms) : Filter("__synonyms__", negate: false);
 ```
 
-**Step 2 — subclass `Searcher`**
+Step 2 — subclass `Searcher`:
 
 ```csharp
 using Examine;
@@ -1322,6 +1374,7 @@ public class SynonymSupportingSearcher : Searcher
         if (searchQuery is not LuceneSearchQuery luceneQuery)
             return;
 
+        // OR across all four aggregated text tiers
         var fields = new[]
         {
             Constants.SystemFields.AggregatedTextsR1,
@@ -1345,14 +1398,14 @@ public class SynonymSupportingSearcher : Searcher
 }
 ```
 
-**Step 3 — register**
+Step 3 — register the subclass:
 
 ```csharp
 builder.Services.AddTransient<IExamineSearcher, SynonymSupportingSearcher>();
 builder.Services.AddTransient<ISearcher, SynonymSupportingSearcher>();
 ```
 
-**Step 4 — use**
+Step 4 — use it in your controller:
 
 ```csharp
 var synonymTerms = Synonyms.TryGetValue(userInput.Trim(), out var syns)
@@ -1369,23 +1422,92 @@ var result = await searcher.SearchAsync(
     take:       10);
 ```
 
+```mermaid
+sequenceDiagram
+    participant C as Controller
+    participant S as SynonymSupportingSearcher
+    participant L as Lucene BooleanQuery
+
+    C->>C: Resolve synonym group<br/>["sofa","couch","settee"]
+    C->>S: SearchAsync(filters: [SynonymFilter])
+    S->>S: AddCustomFilter called
+    S->>L: Build BooleanQuery<br/>SHOULD TermQuery(AggTextsR1, "sofa")<br/>SHOULD TermQuery(AggTextsR1, "couch")<br/>SHOULD TermQuery(AggTextsR1, "settee")<br/>... repeated for R2, R3, Texts
+    L-->>S: BooleanQuery added as MUST
+    S-->>C: SearchResult
+```
+
 ---
 
 ### Option 3 — Elasticsearch synonym token filter (Elasticsearch provider)
 
-Elasticsearch has native synonym support via its analysis pipeline. Synonyms are configured on the index at creation time as part of a custom analyzer — the expansion happens **inside Elasticsearch itself**, not in application code. Umbraco's abstraction layer is unaware of it; you just pass a normal `query` string and Elasticsearch expands it transparently.
+**Before — classic Examine**
 
-Consult the `Kjac.SearchProvider.Elasticsearch` package documentation and Elasticsearch's [synonym token filter docs](https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-synonym-tokenfilter.html) for how to inject a custom analyzer into the index settings before the first indexing run.
+Classic Examine (Lucene) supported synonyms at the analyzer level by supplying a custom `IValueTypeFactory` that built a `PerFieldAnalyzerWrapper` including a `SynonymFilter`. This required significant Lucene boilerplate and was registered via Examine's `IndexCreated` event:
+
+```csharp
+// Classic Examine — registered in a Composer
+examineManager.IndexCreated += (sender, args) =>
+{
+    if (args.Index is not LuceneIndex luceneIndex) return;
+
+    var synonymMap = new SynonymMap.Builder();
+    synonymMap.Add(new CharsRef("couch"),  new CharsRef("sofa"),   true);
+    synonymMap.Add(new CharsRef("settee"), new CharsRef("sofa"),   true);
+    var builtMap = synonymMap.Build();
+
+    var analyzerWrapper = new PerFieldAnalyzerWrapper(
+        new StandardAnalyzer(LuceneVersion.LUCENE_48),
+        new Dictionary<string, Analyzer>
+        {
+            ["nodeName"] = new SynonymAnalyzer(builtMap)
+        });
+
+    luceneIndex.FieldAnalyzer = analyzerWrapper;
+};
+```
+
+This set up synonym expansion transparently at index and query time but was tightly coupled to internal Examine types and the specific Lucene version.
+
+**After — new Umbraco Search (Elasticsearch)**
+
+With Elasticsearch, synonyms are configured in the index settings JSON, entirely outside application code. Umbraco's abstraction layer is unaware of it — you pass a normal `query` string and Elasticsearch expands it transparently at query time.
+
+```json
+// Elasticsearch index settings (applied at index creation via Kjac.SearchProvider.Elasticsearch)
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "my_synonym_filter": {
+          "type": "synonym",
+          "synonyms": [
+            "sofa, couch, settee",
+            "tv, television, telly"
+          ]
+        }
+      },
+      "analyzer": {
+        "my_synonym_analyzer": {
+          "tokenizer": "standard",
+          "filter": ["lowercase", "my_synonym_filter"]
+        }
+      }
+    }
+  }
+}
+```
+
+Once the analyzer is wired to the relevant fields, a query for `"couch"` automatically matches documents containing `"sofa"` or `"settee"` — no application code changes needed.
 
 ---
 
-### Which approach should I use?
+### Summary
 
-| Scenario | Recommended approach |
-|----------|----------------------|
-| Quick to implement, provider-agnostic | Option 1 — application-level query expansion |
-| Examine provider, precise OR control | Option 2 — `AddCustomFilter` + `SynonymFilter` |
-| Elasticsearch provider, large synonym lists | Option 3 — Elasticsearch native synonym token filter |
-| Both providers simultaneously | Option 1 (works everywhere) |
+| Capability | Classic Examine | New Umbraco Search |
+|---|---|---|
+| Application-level expansion | ✅ Expand before `ManagedQuery` | ✅ Expand before `SearchAsync` — identical concept |
+| Analyzer-level synonyms (Examine/Lucene) | 🔧 `SynonymFilter` in custom `PerFieldAnalyzerWrapper` via `IndexCreated` | 🔧 Same Lucene approach (still available), but less needed |
+| OR-across-all-text-fields synonym query | ❌ Manual per-field repetition | ✅ `AddCustomFilter` + `SynonymFilter` covers all aggregated tiers automatically |
+| Analyzer-level synonyms (Elasticsearch) | N/A | ✅ Native synonym token filter — zero application code |
 
 ---
